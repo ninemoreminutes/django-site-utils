@@ -1,0 +1,82 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+ 
+{% block title %}{{ title }} | {% trans 'Site Utils Admin' %}{% endblock %}
+
+{% block extrastyle %}
+<style>
+#header {
+  background-color: #5691b3;
+  border-bottom: solid 3px #faa943;
+  color: #c3f0fa;
+}
+ 
+#branding h1 {
+  color: #fff;
+}
+
+.module h2,
+#content-related .module h2,
+.module caption,
+.inline-group h2 {
+  background: #5691b3 !important;
+  color: #ffe !important;
+}
+
+.selector h2 {
+  border-color: #c3f0fa !important;
+}
+
+div.module {
+  border-color: #afafbf;
+}
+
+a,
+a:link,
+a:visited,
+#changelist-filter a:hover {
+  color: #da8923;
+}
+
+a:hover {
+  color: #ea9943;
+  text-decoration: underline;
+}
+
+#changelist-filter li.selected a {
+  color: #5691b3 !important;
+}
+
+a.section
+a.section:link,
+a.section:visited {
+  color: #ffe;
+}
+
+a.section:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+tr.row1 {
+  background-color: #eee;
+}
+
+.button.default,
+input[type="submit"].default,
+.submit-row input.default {
+  background: #5691b3;
+  border: 1px solid #2693a1;
+}
+
+ul.messagelist li {
+  background-color: #eff;
+}
+</style>
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">{% trans 'Site Utils Admin' %}</h1>
+{% endblock %}
+ 
+{% block nav-global %}{% endblock %}

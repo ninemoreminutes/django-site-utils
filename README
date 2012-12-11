@@ -1,0 +1,4 @@
+The Django Site Utils library provides a reusable Django application with
+management commands and utilities for site-wide actions.
+
+It is currently in the planning stage.

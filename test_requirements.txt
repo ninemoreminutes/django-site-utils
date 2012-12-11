@@ -1,0 +1,7 @@
+# PIP Requirements (for automated testing with tox)
+argparse
+django-debug-toolbar
+django-devserver
+django-extensions
+https://github.com/gregmuellegger/django-setuptest/tarball/master#egg=django-setuptest
+South

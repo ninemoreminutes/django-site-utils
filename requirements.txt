@@ -1,0 +1,17 @@
+# PIP Requirements (for a development/build environment)
+argparse==1.2.1
+coverage==3.6b1
+docutils==0.9.1
+Django==1.4.3
+django-debug-toolbar==0.9.4
+django-devserver==0.4.0
+django-extensions==1.0.1
+https://github.com/gregmuellegger/django-setuptest/tarball/master#egg=django-setuptest
+Jinja2==2.6
+pep8==1.3.3
+py==1.4.12
+Pygments==1.5
+South==0.7.6
+Sphinx==1.1.3
+tox==1.4.2
+virtualenv==1.8.4
