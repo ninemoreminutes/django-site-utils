@@ -8,6 +8,11 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   intro
+   commands
+   signals
+   settings
+
 Indices and tables
 ==================
 

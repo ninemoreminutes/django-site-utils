@@ -17,6 +17,11 @@ PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
+ADMINS = (
+    ('Chris Church', 'chris@ninemoreminutes.com'),
+    ('David Horton', 'david@ninemoreminutes.com'),
+)
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -27,6 +32,8 @@ DATABASES = {
 SITE_ID = 1
 
 STATIC_URL = '/static/'
+
+STATIC_ROOT = os.path.join(PROJECT_ROOT, 'public', 'static')
 
 MIDDLEWARE_CLASSES += (
     'debug_toolbar.middleware.DebugToolbarMiddleware',
@@ -52,6 +59,7 @@ INSTALLED_APPS = (
     'django_extensions',
     'south',
     'site_utils',
+    'test_project.test_app',
 )
 
 INTERNAL_IPS = ('127.0.0.1',)
@@ -62,3 +70,13 @@ DEBUG_TOOLBAR_CONFIG = {
 
 DEVSERVER_DEFAULT_ADDR = '127.0.0.1'
 DEVSERVER_DEFAULT_PORT = '8027'
+
+SITE_UPDATE_COMMANDS = {
+    'default': [
+        'syncdb',
+        'migrate',
+        'collectstatic',
+    ],
+    'other': [
+    ],
+}
