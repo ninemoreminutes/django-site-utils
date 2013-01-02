@@ -6,7 +6,10 @@ Django==1.4.3
 django-debug-toolbar==0.9.4
 django-devserver==0.4.0
 django-extensions==1.0.1
+django-fortunecookie==0.1.3
+https://bitbucket.org/cchurch/django-hotrunner/get/default.zip#egg=django-hotrunner==0.2.1
 https://github.com/gregmuellegger/django-setuptest/tarball/master#egg=django-setuptest
+django-sortedm2m==0.4.0
 Jinja2==2.6
 pep8==1.3.3
 py==1.4.12

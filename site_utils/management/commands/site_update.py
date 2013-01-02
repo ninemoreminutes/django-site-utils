@@ -4,8 +4,12 @@ import os
 
 # Django
 from django.core.management.base import BaseCommand
-from django.core.management import call_command
+from django.core.management import call_command, CommandError
 from django.conf import settings
+
+# Django-Site-Utils
+from site_utils.utils import app_is_installed
+from site_utils.defaults import SITE_UPDATE_COMMANDS
 
 class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
@@ -20,29 +24,38 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         verbosity = int(options.get('verbosity', 1))
         interactive = bool(options.get('interactive', True))
-        # Django-Extensions
-        if 'django_extensions' in settings.INSTALLED_APPS:
-            call_command('clean_pyc', verbosity=verbosity, optimize=True)
-        # Database/South
-        call_command('syncdb', verbosity=verbosity, interactive=interactive)
-        call_command('migrate', verbosity=verbosity, interactive=interactive)
-        call_command('update_permissions', verbosity=verbosity)
-        # Expired sessions
-        call_command('cleanup', verbosity=verbosity)
-        # Registration
-        if 'registration' in settings.INSTALLED_APPS:
-            call_command('cleanupregistration', verbosity=verbosity)
-        # Freebie (cleanup stale tables)
-        call_command('sitecleanup', verbosity=verbosity)
-        # Reversion
-        #if 'reversion' in settings.INSTALLED_APPS:
-        #    call_command('createinitialrevisions', verbosity=verbosity)
-        # ExtAuth
-        if 'freebie.apps.extauth2' in settings.INSTALLED_APPS:
-            call_command('updateperms', verbosity=verbosity)
-            call_command('updateroles', verbosity=verbosity)
-        # FIXME: makemessages/compilemessages?
-        # Staticfiles
-        if not os.path.exists(settings.STATIC_ROOT):
-            os.makedirs(settings.STATIC_ROOT)
-        call_command('collectstatic', verbosity=verbosity, interactive=interactive, clear=True)
+        site_update_commands = getattr(settings, 'SITE_UPDATE_COMMANDS',
+                                       SITE_UPDATE_COMMANDS)
+        if not args:
+            args = ('default',)
+        for arg in args:
+            if arg not in site_update_commands:
+                raise CommandError, 'unknown subcommand %s' % arg
+
+        for arg in args:
+            if verbosity >= 2:
+                print 'Running site_update commands from group "%s"' % arg
+            for cmd_spec in site_update_commands[arg]:
+                if isinstance(cmd_spec, basestring):
+                    cmd_opts = [cmd_spec, (), {}, None]
+                elif isinstance(cmd_spec, (list, tuple)):
+                    cmd_opts = (list(cmd_spec) + [None, None, None, None])[:4]
+                    if not cmd_opts[0]:
+                        raise CommandError, 'no command'
+                    cmd_opts[1] = cmd_opts[1] or ()
+                    cmd_opts[2] = cmd_opts[2] or {}
+                    if isinstance(cmd_opts[3], basestring):
+                        cmd_opts[3] = [cmd_opts[3]]
+                else:
+                    raise CommandError, 'unknown command spec'
+                cmd_name = cmd_opts[0]
+                cmd_args = cmd_opts[1]
+                cmd_options = dict(verbosity=verbosity, interactive=interactive)
+                cmd_options.update(cmd_opts[2])
+                if not all([app_is_installed(x) for x in cmd_opts[3] or ()]):
+                    if verbosity >= 2:
+                        print 'Skipping commond "%s"' % cmd_name
+                    continue
+                if verbosity >= 2:
+                    print 'Running command "%s" with args %r and options %r' % (cmd_name, cmd_args, cmd_options)
+                call_command(cmd_name, *cmd_args, **cmd_options)

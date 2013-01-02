@@ -60,6 +60,8 @@ INSTALLED_APPS = (
     'south',
     'site_utils',
     'test_project.test_app',
+    'sortedm2m',
+    'fortunecookie',
 )
 
 INTERNAL_IPS = ('127.0.0.1',)
@@ -71,12 +73,20 @@ DEBUG_TOOLBAR_CONFIG = {
 DEVSERVER_DEFAULT_ADDR = '127.0.0.1'
 DEVSERVER_DEFAULT_PORT = '8027'
 
+TEST_RUNNER = 'hotrunner.HotRunner'
+
+EXCLUDED_TEST_APPS = [x for x in INSTALLED_APPS \
+                      if not x.startswith('test_project.')]
+
 SITE_UPDATE_COMMANDS = {
     'default': [
         'syncdb',
         'migrate',
         'collectstatic',
+        'clean_pyc',
     ],
     'other': [
+        ('command_does_not_exist', (), {}, 'app_does_not_exist'),
+        'other_command_does_not_exist',
     ],
 }

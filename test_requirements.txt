@@ -3,5 +3,8 @@ argparse
 django-debug-toolbar
 django-devserver
 django-extensions
+django-fortunecookie
+https://bitbucket.org/cchurch/django-hotrunner/get/default.zip#egg=django-hotrunner==0.2.1
 https://github.com/gregmuellegger/django-setuptest/tarball/master#egg=django-setuptest
+django-sortedm2m
 South

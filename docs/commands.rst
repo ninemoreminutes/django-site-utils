@@ -1,8 +1,8 @@
 Commands
 ========
 
-Django Site Utils provides a collection of management commands useful for
-performing site-wide administrative actions.
+Django Site Utils provides the following management commands for performing
+site-wide administrative actions.
 
 site_cleanup
 ------------

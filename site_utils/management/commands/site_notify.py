@@ -3,11 +3,19 @@ from optparse import make_option
 
 # Django
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.mail import EmailMessage
 from django.core.management.base import BaseCommand
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
+
+# Django-Site-Utils
+from site_utils.defaults import SITE_NOTIFY_DEFAULT_RECIPIENTS, \
+    SITE_NOTIFY_SUBJECT_TEMPLATE, SITE_NOTIFY_BODY_TEMPLATE
+from site_utils.utils import app_is_installed
+
+auth_installed = app_is_installed('django.contrib.auth')
+if auth_installed:
+    from django.contrib.auth.models import User
 
 class Command(BaseCommand):
     """Management command to notify site admins/managers."""
@@ -17,10 +25,15 @@ class Command(BaseCommand):
             default=False, help=_('Notify all addresses in settings.ADMINS')),
         make_option('-m', '--managers', action='store_true', dest='managers',
             default=False, help=_('Notify all addresses in settings.MANAGERS')),
-        make_option('-u', '--superusers', action='store_true', dest='superusers',
-            default=False, help=_('Notify all users with superuser status')),
-        make_option('-s', '--staff', action='store_true', dest='staff',
-            default=False, help=_('Notify all users with staff status')),
+    )
+    if auth_installed:
+        option_list += (
+            make_option('-u', '--superusers', action='store_true', dest='superusers',
+                default=False, help=_('Notify all users with superuser status')),
+            make_option('-s', '--staff', action='store_true', dest='staff',
+                default=False, help=_('Notify all users with staff status')),
+        )
+    option_list += (
         make_option('--bcc', action='store_true', dest='bcc',
             default=False, help=_('BCC all recipients')),
         make_option('--subject-template', action='store', dest='subject_template',
@@ -37,15 +50,19 @@ class Command(BaseCommand):
         managers = bool(options.get('managers', False))
         superusers = bool(options.get('superusers', False))
         staff = bool(options.get('staff', False))
-        # Default to only admins if no user options are specified.
         if not (admins or managers or superusers or staff):
-            admins = True
+            default_recipients = getattr(settings, 'SITE_NOTIFY_DEFAULT_RECIPIENTS',
+                                         SITE_NOTIFY_DEFAULT_RECIPIENTS)
+            admins = bool('admins' in default_recipients)
+            managers = bool('managers' in default_recipients)
+            superusers = bool('superusers' in default_recipients and auth_installed)
+            staff = bool('staff' in default_recipients and auth_installed)
         bcc = bool(options.get('bcc', False))
         subject_template = getattr(settings, 'SITE_NOTIFY_SUBJECT_TEMPLATE',
-                                   'site_utils/site_notify_subject.txt')
+                                   SITE_NOTIFY_SUBJECT_TEMPLATE)
         subject_template = options.get('subject_template', None) or subject_template
         body_template = getattr(settings, 'SITE_NOTIFY_BODY_TEMPLATE',
-                                'site_utils/site_notify_body.txt')
+                                SITE_NOTIFY_BODY_TEMPLATE)
         body_template = options.get('body_template', None) or body_template
         subject_text = args[0] if args else _('Site Notification')
         subject_context = {'subject': subject_text}
@@ -66,10 +83,10 @@ class Command(BaseCommand):
                 recipients.setdefault(email, name)
         if superusers:
             for user in User.objects.filter(is_active=True, is_superuser=True):
-                recipients.setdefault(email, name)
+                recipients.setdefault(user.email, user.get_full_name() or user.email)
         if staff:
             for user in User.objects.filter(is_active=True, is_staff=True):
-                recipients.setdefault(email, name)
+                recipients.setdefault(user.email, user.get_full_name() or user.email)
         recipient_list = ['"%s" <%s>' % (v,k) for k,v in recipients.items()]
         email_options = {'subject': subject, 'body': body}
         email_options['bcc' if bcc else 'to'] = recipient_list
