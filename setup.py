@@ -67,7 +67,7 @@ setup(
         'aliases': {
             # FIXME: Add 'test' to both aliases below.
             'dev_build': 'egg_info sdist build_sphinx',
-            'release_build': 'egg_info -b "" sdist build_sphinx',
+            'release_build': 'egg_info -b "" -R sdist build_sphinx',
         },
     },
 )
