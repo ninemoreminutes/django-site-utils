@@ -1,7 +1,7 @@
 # Django
 import django.dispatch
 
-__all__ = []
+__all__ = ['site_cleanup', 'site_update']
 
 site_cleanup = django.dispatch.Signal(providing_args=[])
 

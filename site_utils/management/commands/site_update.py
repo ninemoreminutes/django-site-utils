@@ -3,9 +3,9 @@ from optparse import make_option
 import os
 
 # Django
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.core.management import call_command, CommandError
-from django.conf import settings
 
 # Django-Site-Utils
 from site_utils.utils import app_is_installed
@@ -58,4 +58,9 @@ class Command(BaseCommand):
                     continue
                 if verbosity >= 2:
                     print 'Running command "%s" with args %r and options %r' % (cmd_name, cmd_args, cmd_options)
+                # Prevent collectstatic from failing when the clear option is specified
+                # and the static root doesn't exist.
+                if cmd_name == 'collectstatic' and cmd_options.get('clear', False):
+                    if not os.path.exists(settings.STATIC_ROOT):
+                        os.makedirs(settings.STATIC_ROOT)
                 call_command(cmd_name, *cmd_args, **cmd_options)
