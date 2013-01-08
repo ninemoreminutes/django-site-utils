@@ -26,8 +26,7 @@ class Command(BaseCommand):
         site_cleanup_functions = []
         for func_spec in getattr(settings, 'SITE_CLEANUP_FUNCTIONS',
                                  SITE_CLEANUP_FUNCTIONS):
-            module_name = func_spec.rsplit('.', 1)[0]
-            func_name = func_spec.rsplit('.', 1)[1]
+            module_name, func_name = func_spec.rsplit('.', 1)
             module = __import__(module_name, fromlist=[func_name])
             func = getattr(module, func_name)
             site_cleanup_functions.append(func)

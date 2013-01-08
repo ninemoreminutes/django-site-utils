@@ -19,6 +19,9 @@ TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
     ('Chris Church', 'chris@ninemoreminutes.com'),
+)
+
+MANAGERS = (
     ('David Horton', 'david@ninemoreminutes.com'),
 )
 
