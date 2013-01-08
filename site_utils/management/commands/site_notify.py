@@ -34,6 +34,8 @@ class Command(BaseCommand):
                 default=False, help=_('Notify all users with staff status')),
         )
     option_list += (
+        make_option('--all', action='store_true', dest='all',
+            default=False, help=_('Notify all admins, managers and staff')),
         make_option('--bcc', action='store_true', dest='bcc',
             default=False, help=_('BCC all recipients')),
         make_option('--subject-template', action='store', dest='subject_template',
@@ -46,10 +48,11 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         verbosity = int(options.get('verbosity', 1))
-        admins = bool(options.get('admins', False))
-        managers = bool(options.get('managers', False))
-        superusers = bool(options.get('superusers', False))
-        staff = bool(options.get('staff', False))
+        all_users = bool(options.get('all', False))
+        admins = bool(options.get('admins', False) or all_users)
+        managers = bool(options.get('managers', False) or all_users)
+        superusers = bool(options.get('superusers', False) or (auth_installed and all_users))
+        staff = bool(options.get('staff', False) or (auth_installed and all_users))
         if not (admins or managers or superusers or staff):
             default_recipients = getattr(settings, 'SITE_NOTIFY_DEFAULT_RECIPIENTS',
                                          SITE_NOTIFY_DEFAULT_RECIPIENTS)
