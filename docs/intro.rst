@@ -31,7 +31,7 @@ Add ``site_utils`` to your project's INSTALLED_APPS::
        ...
     )
 
-The ``site_update`` command can refer to a dictionary of commands to run,
+The ``site_update`` command refers to a dictionary of commands to run,
 which can be customized by each project's settings.
 
 Usage

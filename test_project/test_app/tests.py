@@ -97,7 +97,7 @@ class TestSiteUtils(TestCase):
         all_tables = set(connection.introspection.table_names())
         self.assertTrue('myapp_othermodel' in all_tables)
         # Run command with dry-run option. Nothing should have changed.
-        result = self._call_command('site_cleanup', dry_run=True)
+        result = self._call_command('site_cleanup', dry_run=True, verbosity=2)
         self.assertEqual(result[0], None)
         self.assertEqual(ContentType.objects.filter(app_label='myapp').count(), 1)
         all_tables = set(connection.introspection.table_names())
@@ -361,6 +361,12 @@ class TestSiteUtils(TestCase):
             'argh': [
                 'argh',
             ],
+            'wtf': [
+                (),
+            ],
+            'wtf2': [
+                None,
+            ],
         }
         # Run again and verify that the updated list of 'default' commands was
         # used.
@@ -432,6 +438,12 @@ class TestSiteUtils(TestCase):
         self.assertCommandNotCalled('migrate')
         self.assertCommandNotCalled('collectstatic')
         self.assertCommandNotCalled('cleanup')
+        # Run again using 'wtf' subcommand with invalid commands, should fail.
+        result = self._call_command('site_update', 'wtf', interactive=False)
+        self.assertTrue(isinstance(result[0], SystemExit))
+        # Run again using 'wtf2' subcommand with invalid commands, should fail.
+        result = self._call_command('site_update', 'wtf2', interactive=False)
+        self.assertTrue(isinstance(result[0], SystemExit))
         # Run again using unknown subcommand, should fail.
         result = self._call_command('site_update', 'hoohah', interactive=False)
         self.assertTrue(isinstance(result[0], SystemExit))
