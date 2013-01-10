@@ -1,5 +1,6 @@
 # Python
 import email.utils
+import functools
 import sys
 import StringIO
 
@@ -7,6 +8,7 @@ import StringIO
 from django.test import TestCase
 from django.conf import settings
 from django.core import mail
+from django.core.management import get_commands, load_command_class, BaseCommand
 from django.core.management import call_command
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
@@ -17,11 +19,18 @@ from django.db import connection
 from site_utils import defaults
 from site_utils.utils import app_is_installed
 
-site_cleanup_function_called = False
+# From: http://stackoverflow.com/questions/9882280/find-out-if-a-function-has-been-called
+def trackcalls(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        wrapper.has_been_called = True
+        return func(*args, **kwargs)
+    wrapper.has_been_called = False
+    return wrapper
 
+@trackcalls
 def site_cleanup_function(**options):
-    global site_cleanup_function_called
-    site_cleanup_function_called = True
+    pass
 
 class TestSiteUtils(TestCase):
     """Test cases for Site Utils management commands and utilities."""
@@ -55,6 +64,8 @@ class TestSiteUtils(TestCase):
             result = call_command(name, *args, **options)
         except Exception, e:
             result = e
+        except SystemExit, e:
+            result = e
         finally:
             captured_stdout = sys.stdout.getvalue()
             captured_stderr = sys.stderr.getvalue()
@@ -72,7 +83,6 @@ class TestSiteUtils(TestCase):
         self.assertTrue(app_is_installed('site_utils'))
 
     def test_site_cleanup(self):
-        global site_cleanup_function_called
         # Create dummy content type.
         self.assertEqual(ContentType.objects.filter(app_label='myapp').count(), 0)
         newct = ContentType.objects.create(name='MyAppModel', app_label='myapp',
@@ -104,11 +114,10 @@ class TestSiteUtils(TestCase):
         result = self._call_command('site_cleanup')
         self.assertTrue(isinstance(result[0], Exception))
         # Change setting to our own function and verify it gets called.
-        site_cleanup_function_called = False
         settings.SITE_CLEANUP_FUNCTIONS = ['test_project.test_app.tests.site_cleanup_function']
         result = self._call_command('site_cleanup')
         self.assertEqual(result[0], None)
-        self.assertEqual(site_cleanup_function_called, True)
+        self.assertEqual(site_cleanup_function.has_been_called, True)
 
     def test_site_config(self):
         site = Site.objects.get_current()
@@ -299,5 +308,130 @@ class TestSiteUtils(TestCase):
         self.assertTrue('NEW_SUBJECT' in msg.subject)
         self.assertTrue('NEW_BODY_SUFFIX' in msg.body)
 
+    def _get_command_class(self, name):
+        app_name = get_commands()[name]
+        if isinstance(app_name, BaseCommand):
+            instance = app_name
+        else:
+            instance = load_command_class(app_name, name)
+        return type(instance)
+
+    def _track_command_class(self, name):
+        klass = self._get_command_class(name)
+        klass.execute = trackcalls(klass.execute)
+        self.assertFalse(klass.execute.has_been_called)
+
+    def assertCommandCalled(self, name):
+        klass = self._get_command_class(name)
+        self.assertTrue(getattr(klass.execute, 'has_been_called', None))
+
+    def assertCommandNotCalled(self, name):
+        klass = self._get_command_class(name)
+        self.assertFalse(getattr(klass.execute, 'has_been_called', None))
+
     def test_site_update(self):
-        raise NotImplementedError
+        # Run site update with built-in default options, verify only expected
+        # commands have been called.
+        self._track_command_class('validate')
+        self._track_command_class('syncdb')
+        self._track_command_class('migrate')
+        self._track_command_class('collectstatic')
+        self._track_command_class('cleanup')
+        result = self._call_command('site_update', interactive=False)
+        self.assertEqual(result[0], None)
+        self.assertCommandNotCalled('validate')
+        self.assertCommandCalled('syncdb')
+        self.assertCommandCalled('migrate')
+        self.assertCommandCalled('collectstatic')
+        self.assertCommandNotCalled('cleanup')
+        # Replace the default update commands via settings.
+        settings.SITE_UPDATE_COMMANDS = {
+            'default': [
+                'validate',
+                'syncdb',
+                'migrate',
+                ('collectstatic', (), {'clear': True}),
+            ],
+            'clean': [
+                'cleanup',
+            ],
+            'blah': [
+                ('blah', (), {}, 'blahapp'),
+            ],
+            'argh': [
+                'argh',
+            ],
+        }
+        # Run again and verify that the updated list of 'default' commands was
+        # used.
+        self._track_command_class('validate')
+        self._track_command_class('syncdb')
+        self._track_command_class('migrate')
+        self._track_command_class('collectstatic')
+        self._track_command_class('cleanup')
+        result = self._call_command('site_update', interactive=False)
+        self.assertEqual(result[0], None)
+        self.assertCommandCalled('validate')
+        self.assertCommandCalled('syncdb')
+        self.assertCommandCalled('migrate')
+        self.assertCommandCalled('collectstatic')
+        self.assertCommandNotCalled('cleanup')
+        # Run again using 'clean' subcommand, verify only the expected command
+        # was called.
+        self._track_command_class('validate')
+        self._track_command_class('syncdb')
+        self._track_command_class('migrate')
+        self._track_command_class('collectstatic')
+        self._track_command_class('cleanup')
+        result = self._call_command('site_update', 'clean', interactive=False)
+        self.assertEqual(result[0], None)
+        self.assertCommandNotCalled('validate')
+        self.assertCommandNotCalled('syncdb')
+        self.assertCommandNotCalled('migrate')
+        self.assertCommandNotCalled('collectstatic')
+        self.assertCommandCalled('cleanup')
+        # Run again using 'default' and 'clean' subcommands, verify that all
+        # commands were called.
+        self._track_command_class('validate')
+        self._track_command_class('syncdb')
+        self._track_command_class('migrate')
+        self._track_command_class('collectstatic')
+        self._track_command_class('cleanup')
+        result = self._call_command('site_update', 'default', 'clean', interactive=False)
+        self.assertEqual(result[0], None)
+        self.assertCommandCalled('validate')
+        self.assertCommandCalled('syncdb')
+        self.assertCommandCalled('migrate')
+        self.assertCommandCalled('collectstatic')
+        self.assertCommandCalled('cleanup')
+        # Run again using 'blah' subcommand, should still succeed since
+        # 'blahapp' is specified and not installed.
+        self._track_command_class('validate')
+        self._track_command_class('syncdb')
+        self._track_command_class('migrate')
+        self._track_command_class('collectstatic')
+        self._track_command_class('cleanup')
+        result = self._call_command('site_update', 'blah', interactive=False)
+        self.assertEqual(result[0], None)
+        self.assertCommandNotCalled('validate')
+        self.assertCommandNotCalled('syncdb')
+        self.assertCommandNotCalled('migrate')
+        self.assertCommandNotCalled('collectstatic')
+        self.assertCommandNotCalled('cleanup')
+        # Run again using 'argh' subcommand, should fail since 'argh' is an
+        # unknown command.
+        self._track_command_class('validate')
+        self._track_command_class('syncdb')
+        self._track_command_class('migrate')
+        self._track_command_class('collectstatic')
+        self._track_command_class('cleanup')
+        result = self._call_command('site_update', 'argh', interactive=False)
+        self.assertTrue(isinstance(result[0], SystemExit))
+        self.assertCommandNotCalled('validate')
+        self.assertCommandNotCalled('syncdb')
+        self.assertCommandNotCalled('migrate')
+        self.assertCommandNotCalled('collectstatic')
+        self.assertCommandNotCalled('cleanup')
+        # Run again using unknown subcommand, should fail.
+        result = self._call_command('site_update', 'hoohah', interactive=False)
+        self.assertTrue(isinstance(result[0], SystemExit))

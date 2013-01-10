@@ -33,7 +33,7 @@ class Command(BaseCommand):
                 raise CommandError, 'unknown subcommand %s' % arg
 
         for arg in args:
-            if verbosity >= 2:
+            if 1 or verbosity >= 2:
                 print 'Running site_update commands from group "%s"' % arg
             for cmd_spec in site_update_commands[arg]:
                 if isinstance(cmd_spec, basestring):
