@@ -151,11 +151,11 @@ class TestSiteUtils(TestCase):
         self.assertEqual(site.name, 'example.org')
         self.assertEqual(site.domain, 'example.org')
 
-    def test_site_dump(self):
-        raise NotImplementedError
+    #def test_site_dump(self):
+    #    raise NotImplementedError
 
-    def test_site_load(self):
-        raise NotImplementedError
+    #def test_site_load(self):
+    #    raise NotImplementedError
 
     def test_site_notify(self):
         # Create superuser.

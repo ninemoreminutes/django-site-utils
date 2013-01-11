@@ -32,6 +32,8 @@ DATABASES = {
     }
 }
 
+SECRET_KEY = 'af8f979c3ac99c59885f229e045c1574cc510afb'
+
 SITE_ID = 1
 
 STATIC_URL = '/static/'
@@ -78,5 +80,11 @@ DEVSERVER_DEFAULT_PORT = '8027'
 
 TEST_RUNNER = 'hotrunner.HotRunner'
 
-EXCLUDED_TEST_APPS = [x for x in INSTALLED_APPS \
+EXCLUDED_TEST_APPS = [x for x in INSTALLED_APPS
                       if not x.startswith('test_project.')]
+
+# Fix for OverflowError when testing using Python 2.5 and Django 1.4.
+PASSWORD_HASHERS = (
+    'django.contrib.auth.hashers.SHA1PasswordHasher',
+    'django.contrib.auth.hashers.MD5PasswordHasher',
+)

@@ -8,12 +8,15 @@ from django.core.management.base import BaseCommand
 # Django-Site-Utils
 from site_utils.defaults import SITE_CLEANUP_FUNCTIONS
 
+
 class Command(BaseCommand):
     """Run various functions to cleanup the site."""
 
     option_list = BaseCommand.option_list + (
-        make_option('--noinput', action='store_false', dest='interactive', default=True,
-            help='Tells Django to NOT prompt the user for input of any kind.'),
+        make_option('--noinput', action='store_false', dest='interactive',
+                    default=True,
+                    help='Tells Django to NOT prompt the user for input of '
+                    'any kind.'),
         make_option('-n', '--dry-run', action='store_true', dest='dry_run',
                     default=False, help='Dry run only.'),
     )

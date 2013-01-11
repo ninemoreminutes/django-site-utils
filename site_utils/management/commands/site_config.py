@@ -8,14 +8,15 @@ from django.utils.translation import ugettext_lazy as _
 # Django-Site-Utils
 from site_utils.utils import app_is_installed
 
+
 class Command(BaseCommand):
     """View/modify the current Site instance in the database."""
 
     option_list = BaseCommand.option_list + (
         make_option('-n', '--name', action='store', dest='name',
-            default=None, help=_('Update the current Site name.')),
+                    default=None, help=_('Update the current Site name.')),
         make_option('-d', '--domain', action='store', dest='domain',
-            default=None, help=_('Update the Site domain.')),
+                    default=None, help=_('Update the Site domain.')),
     )
     help = _('View or modify the current Site in the database.')
     requires_model_validation = True
@@ -35,4 +36,5 @@ class Command(BaseCommand):
         if name or domain:
             site.save()
         if verbosity >= 1:
-            print 'ID=%d Name="%s" Domain="%s"' % (site.pk, site.name, site.domain)
+            print 'ID=%d Name="%s" Domain="%s"' % (site.pk, site.name,
+                                                   site.domain)

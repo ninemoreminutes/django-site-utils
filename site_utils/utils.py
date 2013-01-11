@@ -5,6 +5,7 @@ from django.db.models import get_app
 
 __all__ = ['app_is_installed']
 
+
 def app_is_installed(app_label):
     """Determine whether the given app is currently installed."""
     try:
@@ -12,6 +13,7 @@ def app_is_installed(app_label):
         return True
     except ImproperlyConfigured:
         return False
+
 
 def remove_stale_content_types(**options):
     """Remove state content types."""
@@ -26,6 +28,7 @@ def remove_stale_content_types(**options):
                 print 'Removing %r' % ct
             if not dry_run:
                 ct.delete()
+
 
 def remove_unused_database_tables(**options):
     """Remove unused database tables."""

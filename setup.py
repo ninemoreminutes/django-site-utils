@@ -34,7 +34,7 @@ setup(
         'django-extensions',
         'django-fortunecookie',
         'django-hotrunner>=0.2.1',
-        'django-setuptest>=0.1.2',
+        #'django-setuptest>=0.1.2',
         'django-sortedm2m',
         'South',
     ],

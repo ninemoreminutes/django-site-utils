@@ -17,31 +17,38 @@ auth_installed = app_is_installed('django.contrib.auth')
 if auth_installed:
     from django.contrib.auth.models import User
 
+
 class Command(BaseCommand):
     """Management command to notify site admins/managers."""
 
     option_list = BaseCommand.option_list + (
         make_option('-a', '--admins', action='store_true', dest='admins',
-            default=False, help=_('Notify all addresses in settings.ADMINS')),
+                    default=False,
+                    help=_('Notify all addresses in settings.ADMINS')),
         make_option('-m', '--managers', action='store_true', dest='managers',
-            default=False, help=_('Notify all addresses in settings.MANAGERS')),
+                    default=False,
+                    help=_('Notify all addresses in settings.MANAGERS')),
     )
     if auth_installed:
         option_list += (
-            make_option('-u', '--superusers', action='store_true', dest='superusers',
-                default=False, help=_('Notify all users with superuser status')),
+            make_option('-u', '--superusers', action='store_true',
+                        dest='superusers', default=False,
+                        help=_('Notify all users with superuser status')),
             make_option('-s', '--staff', action='store_true', dest='staff',
-                default=False, help=_('Notify all users with staff status')),
+                        default=False,
+                        help=_('Notify all users with staff status')),
         )
     option_list += (
-        make_option('--all', action='store_true', dest='all',
-            default=False, help=_('Notify all admins, managers and staff')),
-        make_option('--bcc', action='store_true', dest='bcc',
-            default=False, help=_('BCC all recipients')),
-        make_option('--subject-template', action='store', dest='subject_template',
-            default=None, help=_('Template to use for email subject.')),
+        make_option('--all', action='store_true', dest='all', default=False,
+                    help=_('Notify all admins, managers and staff')),
+        make_option('--bcc', action='store_true', dest='bcc', default=False,
+                    help=_('BCC all recipients')),
+        make_option('--subject-template', action='store',
+                    dest='subject_template', default=None,
+                    help=_('Template to use for email subject.')),
         make_option('--body-template', action='store', dest='body_template',
-            default=None, help=_('Template to use for email body.')),
+                    default=None,
+                    help=_('Template to use for email body.')),
     )
     args = _('[<subject> [<body> ...]]')
     help = _('Send a notification message to site admins/managers.')
@@ -51,19 +58,24 @@ class Command(BaseCommand):
         all_users = bool(options.get('all', False))
         admins = bool(options.get('admins', False) or all_users)
         managers = bool(options.get('managers', False) or all_users)
-        superusers = bool(options.get('superusers', False) or (auth_installed and all_users))
-        staff = bool(options.get('staff', False) or (auth_installed and all_users))
+        superusers = bool(options.get('superusers', False) or
+                          (auth_installed and all_users))
+        staff = bool(options.get('staff', False) or
+                     (auth_installed and all_users))
         if not (admins or managers or superusers or staff):
-            default_recipients = getattr(settings, 'SITE_NOTIFY_DEFAULT_RECIPIENTS',
+            default_recipients = getattr(settings,
+                                         'SITE_NOTIFY_DEFAULT_RECIPIENTS',
                                          SITE_NOTIFY_DEFAULT_RECIPIENTS)
             admins = bool('admins' in default_recipients)
             managers = bool('managers' in default_recipients)
-            superusers = bool('superusers' in default_recipients and auth_installed)
+            superusers = bool('superusers' in default_recipients and
+                              auth_installed)
             staff = bool('staff' in default_recipients and auth_installed)
         bcc = bool(options.get('bcc', False))
         subject_template = getattr(settings, 'SITE_NOTIFY_SUBJECT_TEMPLATE',
                                    SITE_NOTIFY_SUBJECT_TEMPLATE)
-        subject_template = options.get('subject_template', None) or subject_template
+        subject_template = options.get('subject_template', None) or \
+            subject_template
         body_template = getattr(settings, 'SITE_NOTIFY_BODY_TEMPLATE',
                                 SITE_NOTIFY_BODY_TEMPLATE)
         body_template = options.get('body_template', None) or body_template
@@ -86,11 +98,13 @@ class Command(BaseCommand):
                 recipients.setdefault(email, name)
         if superusers:
             for user in User.objects.filter(is_active=True, is_superuser=True):
-                recipients.setdefault(user.email, user.get_full_name() or user.email)
+                recipients.setdefault(user.email,
+                                      user.get_full_name() or user.email)
         if staff:
             for user in User.objects.filter(is_active=True, is_staff=True):
-                recipients.setdefault(user.email, user.get_full_name() or user.email)
-        recipient_list = ['"%s" <%s>' % (v,k) for k,v in recipients.items()]
+                recipients.setdefault(user.email,
+                                      user.get_full_name() or user.email)
+        recipient_list = ['"%s" <%s>' % (v, k) for k, v in recipients.items()]
         email_options = {'subject': subject, 'body': body}
         email_options['bcc' if bcc else 'to'] = recipient_list
         email_message = EmailMessage(**email_options)

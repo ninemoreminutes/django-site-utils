@@ -5,6 +5,6 @@ django-devserver
 django-extensions
 django-fortunecookie
 django-hotrunner>=0.2.1
-django-setuptest>=0.1.2
+https://github.com/gregmuellegger/django-setuptest/archive/master.zip#egg=django-setuptest
 django-sortedm2m
 South

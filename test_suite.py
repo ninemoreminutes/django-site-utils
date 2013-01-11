@@ -4,6 +4,7 @@ import os
 # django-setuptest
 import setuptest
 
+
 class TestSuite(setuptest.setuptest.SetupTestSuite):
 
     def __init__(self, *args, **kwargs):
