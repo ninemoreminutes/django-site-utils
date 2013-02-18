@@ -40,6 +40,10 @@ STATIC_URL = '/static/'
 
 STATIC_ROOT = os.path.join(PROJECT_ROOT, 'public', 'static')
 
+MEDIA_URL = '/media/'
+
+MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'public', 'media')
+
 MIDDLEWARE_CLASSES += (
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'devserver.middleware.DevServerMiddleware',
@@ -63,6 +67,7 @@ INSTALLED_APPS = (
     'devserver',
     'django_extensions',
     'south',
+    'storages',
     'site_utils',
     'test_project.test_app',
     'sortedm2m',
