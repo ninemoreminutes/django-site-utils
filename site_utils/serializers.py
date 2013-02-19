@@ -5,7 +5,7 @@ other serializers.
 """
 # Avoid shadowing the standard library json module
 from __future__ import absolute_import
-from __future__ import unicode_literals
+#from __future__ import unicode_literals
 
 # Python
 import datetime
@@ -231,7 +231,7 @@ def Deserializer(stream_or_string, **options):
             yield obj
     except GeneratorExit:
         raise
-    except Exception as e:
+    except Exception, e:
         # Map to deserializer error
         raise DeserializationError(e)
 

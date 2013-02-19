@@ -36,6 +36,7 @@ setup(
         'django-hotrunner>=0.2.1',
         #'django-setuptest>=0.1.2',
         'django-sortedm2m',
+        'PIL',
         'South',
     ],
     test_suite='test_suite.TestSuite',

@@ -69,7 +69,7 @@ INSTALLED_APPS = (
     'devserver',
     'django_extensions',
     'south',
-    'storages',
+    #'storages',
     'site_utils',
     'test_project.test_app',
     'sortedm2m',

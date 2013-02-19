@@ -7,4 +7,5 @@ django-fortunecookie
 django-hotrunner>=0.2.1
 https://github.com/gregmuellegger/django-setuptest/archive/master.zip#egg=django-setuptest
 django-sortedm2m
+PIL
 South

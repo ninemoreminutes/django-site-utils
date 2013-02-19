@@ -57,6 +57,7 @@ class TestSiteUtils(TestCase):
                 self._saved_settings[attr] = getattr(settings, attr)
         settings.MEDIA_ROOT = tempfile.mkdtemp()
         self._temp_dirs = [settings.MEDIA_ROOT]
+        self._cwd = os.getcwd()
 
     def tearDown(self):
         super(TestSiteUtils, self).tearDown()
@@ -70,6 +71,7 @@ class TestSiteUtils(TestCase):
                 setattr(settings, attr, value)
         for temp_dir in self._temp_dirs:
             shutil.rmtree(temp_dir, True)
+        os.chdir(self._cwd)
 
     def _call_command(self, name, *args, **options):
         options.setdefault('verbosity', 0)
@@ -79,16 +81,21 @@ class TestSiteUtils(TestCase):
         sys.stderr = StringIO.StringIO()
         result = None
         try:
+            #exc_info = None
             result = call_command(name, *args, **options)
         except Exception, e:
+            #exc_info = sys.exc_info()
             result = e
         except SystemExit, e:
+            #exc_info = sys.exc_info()
             result = e
         finally:
             captured_stdout = sys.stdout.getvalue()
             captured_stderr = sys.stderr.getvalue()
             sys.stdout = original_stdout
             sys.stderr = original_stderr
+        #if exc_info:
+        #    sys.excepthook(*exc_info)
         return result, captured_stdout, captured_stderr
 
     def test_app_is_installed(self):
@@ -230,7 +237,11 @@ class TestSiteUtils(TestCase):
                             if not data:
                                 break
                             file_md5.update(data)
-                        archive_file = archive.open('site_media/%s' % value, 'r')
+                        archive_name = 'site_media/%s' % value
+                        if hasattr(archive, 'open'):
+                            archive_file = archive.open(archive_name, 'r')
+                        else:
+                            archive_file = StringIO.StringIO(archive.read(archive_name))
                         archive_md5 = hashlib.md5()
                         while True:
                             data = archive_file.read(2**17)

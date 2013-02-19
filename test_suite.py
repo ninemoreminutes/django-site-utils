@@ -1,5 +1,6 @@
 # Python
 import os
+import sys
 
 # django-setuptest
 import setuptest

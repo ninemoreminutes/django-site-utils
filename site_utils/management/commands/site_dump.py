@@ -104,21 +104,26 @@ class Command(BaseCommand):
         src = getattr(obj, field.name)
         if src.name:
             try:
+                tf_path = None
                 try:
                     file_path = src.path
                 except NotImplementedError:
                     file_path = None
                 if file_path is None:
                     src.open('rb')
-                    tf = tempfile.NamedTemporaryFile(delete=False)
+                    tf_handle, tf_path = tempfile.mkstemp()
+                    tf = os.fdopen(tf_handle, 'wb')
                     shutil.copyfileobj(src, tf)
                     src.close()
                     tf.close()
-                    file_path = tf.name
-                archive.write(file_path, 'site_media/%s' % src.name)
+                    file_path = tf_path
+                zip_path = 'site_media/%s' % src.name
+                zip_path = zip_path.encode('ascii')
+                archive.write(file_path, zip_path)
             finally:
                 try:
-                    os.remove(tf.name)
+                    if tf_path:
+                        os.remove(tf_path)
                 except:
                     pass
 
@@ -151,26 +156,27 @@ class Command(BaseCommand):
         use_base_manager = options.get('use_base_manager')
         app_dict = self.build_app_dict(app_labels, excludes)
         try:
-            datafile = None
+            file_path = None
             archive = zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED)
             object_iter = self.iter_objects(app_dict, using, use_base_manager,
                                             archive)
-            datafile = tempfile.NamedTemporaryFile(suffix='.json',
-                                                   prefix='site_dump_',
-                                                   delete=False)
+            file_handle, file_path = tempfile.mkstemp(suffix='.json',
+                                                      prefix='site_dump_')
+            datafile = os.fdopen(file_handle, 'wb')
             serializer = JsonSerializer()
             serializer.serialize(object_iter, indent=4, use_natural_keys=True,
                                  stream=datafile)
             datafile.close()
-            archive.write(datafile.name, 'site_dump.json')
+            archive.write(file_path, 'site_dump.json')
             archive.writestr('site_dump_version', '1')
             archive.close()
         except Exception, e:
-            if show_traceback:
+            if 1 or show_traceback:
                 raise
             raise CommandError('Unable to serialize database: %s' % e)
         finally:
             try:
-                os.remove(datafile.name)
+                if file_path:
+                    os.remove(file_path)
             except:
                 pass
