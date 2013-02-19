@@ -32,6 +32,8 @@ DATABASES = {
     }
 }
 
+TIME_ZONE = 'America/New_York'
+
 SECRET_KEY = 'af8f979c3ac99c59885f229e045c1574cc510afb'
 
 SITE_ID = 1

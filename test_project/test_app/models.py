@@ -6,7 +6,9 @@ class Document(models.Model):
 
     title = models.CharField(max_length=100)
     doc = models.FileField(upload_to='documents')
-    created = models.DateTimeField(auto_now_add=True)
+    # Separate date/time fields so we have those types for testing site_dump.
+    created_date = models.DateField(auto_now_add=True)
+    created_time = models.TimeField(auto_now_add=True)
     created_by = models.ForeignKey('auth.User', related_name='documents',
                                    blank=True, null=True, default=None)
 
@@ -15,6 +17,8 @@ class Photo(models.Model):
 
     caption = models.CharField(max_length=100)
     image = models.ImageField(upload_to='photos')
-    created = models.DateTimeField(auto_now_add=True)
+    # Separate date/time fields so we have those types for testing site_dump.
+    created_date = models.DateField(auto_now_add=True)
+    created_time = models.TimeField(auto_now_add=True)
     created_by = models.ForeignKey('auth.User', related_name='photos',
                                    blank=True, null=True, default=None)
