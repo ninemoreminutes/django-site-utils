@@ -21,6 +21,8 @@ from django.utils import simplejson
 from django.utils import six
 from django.utils.timezone import is_aware
 
+__all__ = ['SiteSerializer', 'SiteDeserializer', 'SiteJsonEncoder']
+
 def _get_model(model_identifier):
     """
     Helper to look up a model from an "app_label.module_name" string.
@@ -33,7 +35,7 @@ def _get_model(model_identifier):
         raise base.DeserializationError("Invalid model identifier: '%s'" % model_identifier)
     return Model
     
-class JsonSerializer(base.Serializer):
+class SiteSerializer(base.Serializer):
     """Serialize a queryset to JSON. Copy of serializer from Django 1.5."""
 
     internal_use_only = False
@@ -100,7 +102,7 @@ class JsonSerializer(base.Serializer):
         if indent:
             self.stream.write('\n')
         simplejson.dump(self.get_dump_object(obj), self.stream,
-                        cls=DjangoJSONEncoder, **self.json_kwargs)
+                        cls=SiteJsonEncoder, **self.json_kwargs)
         self._current = None
 
     def get_dump_object(self, obj):
@@ -148,98 +150,89 @@ class JsonSerializer(base.Serializer):
             return self.stream.getvalue()
 
 
-def PythonDeserializer(object_list, **options):
-    """
-    Deserialize simple Python objects back into Django ORM instances.
+def SiteDeserializer(stream_or_string, **options):
+    """Deserialize a JSON string or stream back into Django ORM instances."""
 
-    It's expected that you pass the Python objects themselves (instead of a
-    stream or a string) to the constructor
-    """
-    db = options.pop('using', DEFAULT_DB_ALIAS)
-    ignore = options.pop('ignorenonexistent', False)
-
-    models.get_apps()
-    for d in object_list:
-        # Look up the model and starting build a dict of data for it.
-        Model = _get_model(d["model"])
-        data = {Model._meta.pk.attname: Model._meta.pk.to_python(d["pk"])}
-        m2m_data = {}
-        model_fields = Model._meta.get_all_field_names()
-
-        # Handle each field
-        for (field_name, field_value) in six.iteritems(d["fields"]):
-
-            if ignore and field_name not in model_fields:
-                # skip fields no longer on model
-                continue
-
-            if isinstance(field_value, str):
-                field_value = smart_text(field_value, options.get("encoding", settings.DEFAULT_CHARSET), strings_only=True)
-
-            field = Model._meta.get_field(field_name)
-
-            # Handle M2M relations
-            if field.rel and isinstance(field.rel, models.ManyToManyRel):
-                if hasattr(field.rel.to._default_manager, 'get_by_natural_key'):
-                    def m2m_convert(value):
-                        if hasattr(value, '__iter__') and not isinstance(value, six.text_type):
-                            return field.rel.to._default_manager.db_manager(db).get_by_natural_key(*value).pk
-                        else:
-                            return smart_text(field.rel.to._meta.pk.to_python(value))
-                else:
-                    m2m_convert = lambda v: smart_text(field.rel.to._meta.pk.to_python(v))
-                m2m_data[field.name] = [m2m_convert(pk) for pk in field_value]
-
-            # Handle FK fields
-            elif field.rel and isinstance(field.rel, models.ManyToOneRel):
-                if field_value is not None:
-                    if hasattr(field.rel.to._default_manager, 'get_by_natural_key'):
-                        if hasattr(field_value, '__iter__') and not isinstance(field_value, six.text_type):
-                            obj = field.rel.to._default_manager.db_manager(db).get_by_natural_key(*field_value)
-                            value = getattr(obj, field.rel.field_name)
-                            # If this is a natural foreign key to an object that
-                            # has a FK/O2O as the foreign key, use the FK value
-                            if field.rel.to._meta.pk.rel:
-                                value = value.pk
-                        else:
-                            value = field.rel.to._meta.get_field(field.rel.field_name).to_python(field_value)
-                        data[field.attname] = value
-                    else:
-                        data[field.attname] = field.rel.to._meta.get_field(field.rel.field_name).to_python(field_value)
-                else:
-                    data[field.attname] = None
-
-            # Handle all other fields
-            else:
-                data[field.name] = field.to_python(field_value)
-
-        yield base.DeserializedObject(Model(**data), m2m_data)
-
-
-
-def Deserializer(stream_or_string, **options):
-    """
-    Deserialize a stream or string of JSON data.
-    """
     if not isinstance(stream_or_string, (bytes, six.string_types)):
         stream_or_string = stream_or_string.read()
     if isinstance(stream_or_string, bytes):
         stream_or_string = stream_or_string.decode('utf-8')
     try:
-        objects = simplejson.loads(stream_or_string)
-        for obj in PythonDeserializer(objects, **options):
-            yield obj
-    except GeneratorExit:
-        raise
+        object_list = simplejson.loads(stream_or_string)
+
+        db = options.pop('using', DEFAULT_DB_ALIAS)
+        ignore = options.pop('ignorenonexistent', False)
+
+        models.get_apps()
+        for d in object_list:
+            # Look up the model and starting build a dict of data for it.
+            Model = _get_model(d["model"])
+            data = {Model._meta.pk.attname: Model._meta.pk.to_python(d["pk"])}
+            m2m_data = {}
+            model_fields = Model._meta.get_all_field_names()
+
+            # Handle each field
+            for (field_name, field_value) in six.iteritems(d["fields"]):
+
+                if ignore and field_name not in model_fields:
+                    # skip fields no longer on model
+                    continue
+
+                if isinstance(field_value, str):
+                    field_value = smart_text(field_value, options.get("encoding", settings.DEFAULT_CHARSET), strings_only=True)
+
+                field = Model._meta.get_field(field_name)
+
+                # Handle M2M relations
+                if field.rel and isinstance(field.rel, models.ManyToManyRel):
+                    if hasattr(field.rel.to._default_manager, 'get_by_natural_key'):
+                        def m2m_convert(value):
+                            if hasattr(value, '__iter__') and not isinstance(value, six.text_type):
+                                return field.rel.to._default_manager.db_manager(db).get_by_natural_key(*value).pk
+                            else:
+                                return smart_text(field.rel.to._meta.pk.to_python(value))
+                    else:
+                        m2m_convert = lambda v: smart_text(field.rel.to._meta.pk.to_python(v))
+                    m2m_data[field.name] = [m2m_convert(pk) for pk in field_value]
+
+                # Handle FK fields
+                elif field.rel and isinstance(field.rel, models.ManyToOneRel):
+                    if field_value is not None:
+                        if hasattr(field.rel.to._default_manager, 'get_by_natural_key'):
+                            if hasattr(field_value, '__iter__') and not isinstance(field_value, six.text_type):
+                                obj = field.rel.to._default_manager.db_manager(db).get_by_natural_key(*field_value)
+                                value = getattr(obj, field.rel.field_name)
+                                # If this is a natural foreign key to an object that
+                                # has a FK/O2O as the foreign key, use the FK value
+                                if field.rel.to._meta.pk.rel:
+                                    value = value.pk
+                            else:
+                                value = field.rel.to._meta.get_field(field.rel.field_name).to_python(field_value)
+                            data[field.attname] = value
+                        else:
+                            data[field.attname] = field.rel.to._meta.get_field(field.rel.field_name).to_python(field_value)
+                    else:
+                        data[field.attname] = None
+
+                # Handle all other fields
+                else:
+                    data[field.name] = field.to_python(field_value)
+
+            yield base.DeserializedObject(Model(**data), m2m_data)
+
     except Exception, e:
         # Map to deserializer error
         raise DeserializationError(e)
 
 
-class DjangoJSONEncoder(simplejson.JSONEncoder):
-    """
-    JSONEncoder subclass that knows how to encode date/time and decimal types.
-    """
+
+
+
+class SiteJsonEncoder(simplejson.JSONEncoder):
+    """JSONEncoder subclass to handle date/time and decimal types."""
+
+    # From Django 1.5 source.
+
     def default(self, o):
         # See "Date Time String Format" in the ECMA-262 specification.
         if isinstance(o, datetime.datetime):
@@ -261,4 +254,4 @@ class DjangoJSONEncoder(simplejson.JSONEncoder):
         elif isinstance(o, decimal.Decimal):
             return str(o)
         else:
-            return super(DjangoJSONEncoder, self).default(o)
+            return super(SiteJsonEncoder, self).default(o)

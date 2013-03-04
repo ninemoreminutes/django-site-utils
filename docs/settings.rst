@@ -1,16 +1,16 @@
 Settings
 ========
 
-.. SITE_CLEANUP_FUNCTIONS
-   ----------------------
+SITE_CLEANUP_FUNCTIONS
+----------------------
 
-   This setting is a list or tuple of functions that are execute when for the
-   ``site_cleanup`` command.
+This setting is a list or tuple of functions that are executed for the
+``site_cleanup`` command.
 
-   Its default value is::
+Its default value is::
 
-      SITE_CLEANUP_FUNCTIONS = [
-      ]
+   SITE_CLEANUP_FUNCTIONS = [
+   ]
 
 SITE_NOTIFY_DEFAULT_RECIPIENTS
 ------------------------------

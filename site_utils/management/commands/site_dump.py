@@ -16,7 +16,7 @@ from django.db.models import get_apps, get_models, get_model, get_app
 from django.utils.datastructures import SortedDict
 
 # Django-Site-Utils
-from site_utils.serializers import JsonSerializer
+from site_utils.serializers import SiteSerializer
 
 class Command(BaseCommand):
     """Dump the contents of the entire site, including media files."""
@@ -163,7 +163,7 @@ class Command(BaseCommand):
             file_handle, file_path = tempfile.mkstemp(suffix='.json',
                                                       prefix='site_dump_')
             datafile = os.fdopen(file_handle, 'wb')
-            serializer = JsonSerializer()
+            serializer = SiteSerializer()
             serializer.serialize(object_iter, indent=4, use_natural_keys=True,
                                  stream=datafile)
             datafile.close()

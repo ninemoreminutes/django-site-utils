@@ -27,10 +27,10 @@ from django.utils import simplejson
 
 # Django-Site-Utils
 from site_utils import defaults
-from site_utils.serializers import DjangoJSONEncoder
+from site_utils.serializers import SiteJsonEncoder
 from site_utils.utils import app_is_installed
 
-# TestApp
+# Test App
 from models import Document, Photo
 
 # From: http://stackoverflow.com/questions/9882280/find-out-if-a-function-has-been-called
@@ -227,7 +227,7 @@ class TestSiteUtils(TestCase):
                         value = field.value_to_string(obj)
                     if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
                         # FIXME: Probably a better way, but this gets it done for now.
-                        value = simplejson.loads(simplejson.dumps(value, cls=DjangoJSONEncoder))
+                        value = simplejson.loads(simplejson.dumps(value, cls=SiteJsonEncoder))
                     if isinstance(field, models.FileField):
                         field_file = getattr(obj, field_name)
                         field_file.open('rb')
@@ -290,9 +290,14 @@ class TestSiteUtils(TestCase):
         result, output = self._call_site_dump(output='blah.zip')
         self.assertEqual(os.path.basename(output), 'blah.zip')
         self._check_site_dump_file(output)
+        return output
 
-    #def test_site_load(self):
-    #    raise NotImplementedError
+    def test_site_load(self):
+        output = self.test_site_dump()
+        result = self._call_command('site_load', output)
+        self.assertEqual(result[0], None)
+
+        raise NotImplementedError
 
     def test_site_notify(self):
         # Create superuser.
