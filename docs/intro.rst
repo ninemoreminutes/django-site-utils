@@ -46,12 +46,15 @@ Where *<command>* is one of the following:
 * ``site_cleanup``
 * ``site_config``
 * ``site_dump``
+* ``site_error``
 * ``site_load``
 * ``site_notify``
 * ``site_update``
 
 Any command can be followed with the ``--help`` option to view the available
 command line arguments.
+
+Django-Site-Utils also offers generic error views...
 
 Next Steps
 ----------

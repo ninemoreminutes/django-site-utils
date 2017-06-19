@@ -19,6 +19,7 @@ It's simply a collection of tools I've found useful across multiple projects.
    commands
    signals
    settings
+   views
 
 .. Indices and tables
 .. ==================

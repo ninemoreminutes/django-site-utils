@@ -1,27 +1,19 @@
-"""
-A Python "serializer". Doesn't do much serializing per se -- just converts to
-and from basic Python data types (lists, dicts, strings, etc.). Useful as a basis for
-other serializers.
-"""
-# Avoid shadowing the standard library json module
-from __future__ import absolute_import
-#from __future__ import unicode_literals
-
 # Python
 import datetime
 import decimal
+import json
 
 # Django
 from django.conf import settings
 from django.core.serializers import base
 from django.core.serializers.base import DeserializationError
 from django.db import models, DEFAULT_DB_ALIAS
-from django.utils.encoding import smart_text, is_protected_type, smart_unicode
-from django.utils import simplejson
+from django.utils.encoding import smart_text, is_protected_type
 from django.utils import six
 from django.utils.timezone import is_aware
 
 __all__ = ['SiteSerializer', 'SiteDeserializer', 'SiteJsonEncoder']
+
 
 def _get_model(model_identifier):
     """
@@ -34,7 +26,8 @@ def _get_model(model_identifier):
     if Model is None:
         raise base.DeserializationError("Invalid model identifier: '%s'" % model_identifier)
     return Model
-    
+
+
 class SiteSerializer(base.Serializer):
     """Serialize a queryset to JSON. Copy of serializer from Django 1.5."""
 
@@ -73,10 +66,6 @@ class SiteSerializer(base.Serializer):
         return self.getvalue()
 
     def start_serialization(self):
-        if simplejson.__version__.split('.') >= ['2', '1', '3']:
-            # Use JS strings to represent Python Decimal instances (ticket #16850)
-            self.options.update({'use_decimal': False})
-        self._current = None
         self.json_kwargs = self.options.copy()
         self.json_kwargs.pop('stream', None)
         self.json_kwargs.pop('fields', None)
@@ -101,8 +90,8 @@ class SiteSerializer(base.Serializer):
                 self.stream.write(' ')
         if indent:
             self.stream.write('\n')
-        simplejson.dump(self.get_dump_object(obj), self.stream,
-                        cls=SiteJsonEncoder, **self.json_kwargs)
+        json.dump(self.get_dump_object(obj), self.stream,
+                  cls=SiteJsonEncoder, **self.json_kwargs)
         self._current = None
 
     def get_dump_object(self, obj):
@@ -129,7 +118,7 @@ class SiteSerializer(base.Serializer):
         if self.use_natural_keys and hasattr(field.rel.to, 'natural_key'):
             related = getattr(obj, field.name)
             if related:
-                value = related.natural_key(),
+                value = related.natural_key()
             else:
                 value = None
         else:
@@ -139,11 +128,12 @@ class SiteSerializer(base.Serializer):
     def handle_m2m_field(self, obj, field):
         if field.rel.through._meta.auto_created:
             if self.use_natural_keys and hasattr(field.rel.to, 'natural_key'):
-                m2m_value = lambda value: value.natural_key()
+                def m2m_value(value):
+                    return value.natural_key()
             else:
-                m2m_value = lambda value: smart_text(value._get_pk_val(), strings_only=True)
-            self._current[field.name] = [m2m_value(related)
-                               for related in getattr(obj, field.name).iterator()]
+                def m2m_value(value):
+                    return smart_text(value._get_pk_val(), strings_only=True)
+            self._current[field.name] = [m2m_value(related) for related in getattr(obj, field.name).iterator()]
 
     def getvalue(self):
         if callable(getattr(self.stream, 'getvalue', None)):
@@ -158,7 +148,7 @@ def SiteDeserializer(stream_or_string, **options):
     if isinstance(stream_or_string, bytes):
         stream_or_string = stream_or_string.decode('utf-8')
     try:
-        object_list = simplejson.loads(stream_or_string)
+        object_list = json.loads(stream_or_string)
 
         db = options.pop('using', DEFAULT_DB_ALIAS)
         ignore = options.pop('ignorenonexistent', False)
@@ -192,7 +182,8 @@ def SiteDeserializer(stream_or_string, **options):
                             else:
                                 return smart_text(field.rel.to._meta.pk.to_python(value))
                     else:
-                        m2m_convert = lambda v: smart_text(field.rel.to._meta.pk.to_python(v))
+                        def m2m_convert(value):
+                            return smart_text(field.rel.to._meta.pk.to_python(value))
                     m2m_data[field.name] = [m2m_convert(pk) for pk in field_value]
 
                 # Handle FK fields
@@ -225,10 +216,7 @@ def SiteDeserializer(stream_or_string, **options):
         raise DeserializationError(e)
 
 
-
-
-
-class SiteJsonEncoder(simplejson.JSONEncoder):
+class SiteJsonEncoder(json.JSONEncoder):
     """JSONEncoder subclass to handle date/time and decimal types."""
 
     # From Django 1.5 source.

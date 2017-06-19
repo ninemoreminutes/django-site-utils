@@ -1,0 +1,8 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}{% with title=error_title %}{{ block.super }}{% endwith %}{% endblock %}
+
+{% block content %}
+<h1>{{ error_title }} ({{ error_status }})</h1>
+<p>{{ error_message }}</p>
+{% endblock %}

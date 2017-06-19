@@ -3,6 +3,7 @@ import os
 import sys
 
 # Django
+import django
 from django.conf import global_settings
 
 # Update this module's local settings from the global settings module.
@@ -46,14 +47,32 @@ MEDIA_URL = '/media/'
 
 MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'public', 'media')
 
-MIDDLEWARE_CLASSES += (
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
-    'devserver.middleware.DevServerMiddleware',
-)
+if django.VERSION >= (1, 10):
+    MIDDLEWARE = (locals().get('MIDDLEWARE', None) or ()) + (
+        'debug_toolbar.middleware.DebugToolbarMiddleware',
+    )
+else:
+    MIDDLEWARE_CLASSES = (locals().get('MIDDLEWARE_CLASSES', None) or ()) + (
+        'debug_toolbar.middleware.DebugToolbarMiddleware',
+    )
 
-TEMPLATE_DIRS = (
-    os.path.join(PROJECT_ROOT, 'templates'),
-)
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'APP_DIRS': True,
+        'DIRS': [
+            os.path.join(PROJECT_ROOT, 'templates'),
+        ],
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
 
 ROOT_URLCONF = 'test_project.urls'
 
@@ -66,10 +85,8 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.admin',
     'debug_toolbar',
-    'devserver',
     'django_extensions',
-    'south',
-    #'storages',
+    # 'storages',
     'site_utils',
     'test_project.test_app',
     'sortedm2m',
@@ -78,20 +95,11 @@ INSTALLED_APPS = (
 
 INTERNAL_IPS = ('127.0.0.1',)
 
-DEBUG_TOOLBAR_CONFIG = {
-    'INTERCEPT_REDIRECTS': False,
-}
+RUNSERVER_DEFAULT_ADDR = '127.0.0.1'
+RUNSERVER_DEFAULT_PORT = '8027'
 
-DEVSERVER_DEFAULT_ADDR = '127.0.0.1'
-DEVSERVER_DEFAULT_PORT = '8027'
 
-TEST_RUNNER = 'hotrunner.HotRunner'
-
-EXCLUDED_TEST_APPS = [x for x in INSTALLED_APPS
-                      if not x.startswith('test_project.')]
-
-# Fix for OverflowError when testing using Python 2.5 and Django 1.4.
-PASSWORD_HASHERS = (
-    'django.contrib.auth.hashers.SHA1PasswordHasher',
-    'django.contrib.auth.hashers.MD5PasswordHasher',
-)
+SITE_ERROR_TEMPLATES = [
+    (r'^admin-site/', 'admin/error.html'),
+    (r'^', 'site_utils/error.html'),
+]

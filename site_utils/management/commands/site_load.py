@@ -1,27 +1,17 @@
-# This is necessary in Python 2.5 to enable the with statement, in 2.6
-# and up it is no longer necessary.
-from __future__ import with_statement
+# Python
+import sys
+import zipfile
+from optparse import make_option
+import traceback
 
 # Django
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
-
-
-import sys
-import os
-import gzip
-import zipfile
-from optparse import make_option
-import traceback
-
-from django.conf import settings
 from django.core import serializers
-from django.core.management.base import BaseCommand
 from django.core.management.color import no_style
-from django.db import (connections, router, transaction, DEFAULT_DB_ALIAS,
+from django.db import (connections, router, DEFAULT_DB_ALIAS,
       IntegrityError, DatabaseError)
-from django.db.models import get_apps
 from django.utils.itercompat import product
 
 try:
@@ -29,6 +19,7 @@ try:
     has_bz2 = True
 except ImportError:
     has_bz2 = False
+
 
 class Command(BaseCommand):
     """Load the contents of a site from a site_dump backup."""

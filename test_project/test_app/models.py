@@ -1,6 +1,7 @@
 # Django
 from django.db import models
 
+
 class Document(models.Model):
     """Test model with a file field."""
 
@@ -11,6 +12,8 @@ class Document(models.Model):
     created_time = models.TimeField(auto_now_add=True)
     created_by = models.ForeignKey('auth.User', related_name='documents',
                                    blank=True, null=True, default=None)
+    modified = models.DateTimeField(auto_now=True)
+
 
 class Photo(models.Model):
     """Test model with an image field."""
@@ -22,3 +25,4 @@ class Photo(models.Model):
     created_time = models.TimeField(auto_now_add=True)
     created_by = models.ForeignKey('auth.User', related_name='photos',
                                    blank=True, null=True, default=None)
+    modified = models.DateTimeField(auto_now=True)

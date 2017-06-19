@@ -18,22 +18,23 @@ from django.utils.datastructures import SortedDict
 # Django-Site-Utils
 from site_utils.serializers import SiteSerializer
 
+
 class Command(BaseCommand):
     """Dump the contents of the entire site, including media files."""
 
     option_list = BaseCommand.option_list + (
         make_option('-o', '--output', default=None, dest='output',
-            help='Specifies the output archive (ZIP) filename.'),
+                    help='Specifies the output archive (ZIP) filename.'),
         make_option('--database', action='store', dest='database',
-            default=DEFAULT_DB_ALIAS, help='Nominates a specific database to '
-                'dump fixtures from. Defaults to the "default" database.'),
+                    default=DEFAULT_DB_ALIAS, help='Nominates a specific database to '
+                    'dump fixtures from. Defaults to the "default" database.'),
         make_option('-e', '--exclude', dest='exclude', action='append',
-            default=[], help='An appname or appname.ModelName to exclude (use '
-            'multiple --exclude to exclude multiple apps/models).'),
+                    default=[], help='An appname or appname.ModelName to exclude (use '
+                    'multiple --exclude to exclude multiple apps/models).'),
         make_option('-a', '--all', action='store_true', dest='use_base_manager',
-            default=True, help='Use Django\'s base manager to dump all models '
-            'stored in the database, including those that would otherwise be '
-            'filtered or modified by a custom manager.'),
+                    default=True, help='Use Django\'s base manager to dump all models '
+                    'stored in the database, including those that would otherwise be '
+                    'filtered or modified by a custom manager.'),
     )
     help = ('Dump the contents of the entire site, including media files, to '
             'an archive containing a fixture of the given format.')
@@ -146,7 +147,7 @@ class Command(BaseCommand):
 
     def handle(self, *app_labels, **options):
         """Handle the site_dump management command."""
-        verbosity = int(options.get('verbosity', 1))
+        # verbosity = int(options.get('verbosity', 1))
         output = options.get('output', None)
         if output is None:
             output = 'site_dump_%s.zip' % datetime.datetime.now().strftime('%Y%m%d_%H%M%S')

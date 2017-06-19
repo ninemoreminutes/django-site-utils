@@ -10,20 +10,21 @@ import StringIO
 import tempfile
 import zipfile
 
+# Py.Test
+import pytest
+
 # Django
 from django.test import TestCase
 from django.conf import settings
 from django.core import mail
 from django.core.files.base import ContentFile
 from django.core.management import get_commands, load_command_class, BaseCommand
-from django.core.management import call_command
+from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User, Group, Permission
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.sites.models import Site
+# from django.contrib.contenttypes.models import ContentType
+# from django.contrib.sites.models import Site
 from django.db import connection, models
-from django.db.models import get_model
 from django.utils.encoding import is_protected_type
-from django.utils import simplejson
 
 # Django-Site-Utils
 from site_utils import defaults
@@ -45,6 +46,7 @@ def trackcalls(func):
 @trackcalls
 def site_cleanup_function(**options):
     pass
+
 
 class TestSiteUtils(TestCase):
     """Test cases for Site Utils management commands and utilities."""
@@ -98,83 +100,305 @@ class TestSiteUtils(TestCase):
         #    sys.excepthook(*exc_info)
         return result, captured_stdout, captured_stderr
 
-    def test_app_is_installed(self):
-        self.assertTrue(app_is_installed('contenttypes'))
-        self.assertTrue(app_is_installed('django.contrib.contenttypes'))
-        self.assertTrue(app_is_installed('admin'))
-        self.assertTrue(app_is_installed('django.contrib.admin'))
-        self.assertFalse(app_is_installed('flatpages'))
-        self.assertFalse(app_is_installed('django.contrib.flatpages'))
-        self.assertTrue(app_is_installed('site_utils'))
 
-    def test_site_cleanup(self):
-        # Create dummy content type.
-        self.assertEqual(ContentType.objects.filter(app_label='myapp').count(), 0)
-        newct = ContentType.objects.create(name='MyAppModel', app_label='myapp',
-                                           model='mymodel')
-        self.assertEqual(ContentType.objects.filter(app_label='myapp').count(), 1)
-        # Create extra database table.
-        all_tables = set(connection.introspection.table_names())
-        self.assertFalse('myapp_othermodel' in all_tables)
-        cursor = connection.cursor()
-        sql = '''CREATE TABLE myapp_othermodel (id INTEGER PRIMARY KEY);'''
-        cursor.execute(sql)
-        all_tables = set(connection.introspection.table_names())
-        self.assertTrue('myapp_othermodel' in all_tables)
-        # Run command with dry-run option. Nothing should have changed.
-        result = self._call_command('site_cleanup', dry_run=True, verbosity=2)
-        self.assertEqual(result[0], None)
-        self.assertEqual(ContentType.objects.filter(app_label='myapp').count(), 1)
-        all_tables = set(connection.introspection.table_names())
-        self.assertTrue('myapp_othermodel' in all_tables)
-        # Run command.  Extra content type and table should be gone.
-        result = self._call_command('site_cleanup')
-        self.assertEqual(result[0], None)
-        self.assertEqual(ContentType.objects.filter(app_label='myapp').count(), 0)
-        all_tables = set(connection.introspection.table_names())
-        self.assertFalse('myapp_othermodel' in all_tables)
-        # Change setting to refer to a nonexistent function, which should raise
-        # an exception.
-        settings.SITE_CLEANUP_FUNCTIONS = ['somepackage.somemodule.somefunction']
-        result = self._call_command('site_cleanup')
-        self.assertTrue(isinstance(result[0], Exception))
-        # Change setting to our own function and verify it gets called.
-        settings.SITE_CLEANUP_FUNCTIONS = ['test_project.test_app.tests.site_cleanup_function']
-        result = self._call_command('site_cleanup')
-        self.assertEqual(result[0], None)
-        self.assertEqual(site_cleanup_function.has_been_called, True)
+def test_app_is_installed():
+    assert app_is_installed('contenttypes')
+    assert app_is_installed('django.contrib.contenttypes')
+    assert app_is_installed('admin')
+    assert app_is_installed('django.contrib.admin')
+    assert not app_is_installed('flatpages')
+    assert not app_is_installed('django.contrib.flatpages')
+    assert app_is_installed('site_utils')
 
-    def test_site_config(self):
-        site = Site.objects.get_current()
-        self.assertEqual(site.name, 'example.com')
-        self.assertEqual(site.domain, 'example.com')
-        # With no options and verbosity=1, should display the current site.
-        result = self._call_command('site_config', verbosity=1)
-        self.assertEqual(result[0], None)
-        self.assertTrue(site.name in result[1])
-        self.assertTrue(site.domain in result[1])
-        site = Site.objects.get_current()
-        self.assertEqual(site.name, 'example.com')
-        self.assertEqual(site.domain, 'example.com')
-        # Change only the name.
-        result = self._call_command('site_config', _name='example.net')
-        self.assertEqual(result[0], None)
-        site = Site.objects.get_current()
-        self.assertEqual(site.name, 'example.net')
-        self.assertEqual(site.domain, 'example.com')
-        # Change only the domain.
-        result = self._call_command('site_config', domain='example.net')
-        self.assertEqual(result[0], None)
-        site = Site.objects.get_current()
-        self.assertEqual(site.name, 'example.net')
-        self.assertEqual(site.domain, 'example.net')
-        # Change both name and domain.
-        result = self._call_command('site_config', _name='example.org',
-                                    domain='example.org')
-        self.assertEqual(result[0], None)
-        site = Site.objects.get_current()
-        self.assertEqual(site.name, 'example.org')
-        self.assertEqual(site.domain, 'example.org')
+
+@pytest.mark.parametrize('status_code,view_name', [
+    (400, 'bad-request'),
+    (403, 'forbidden'),
+    (404, 'not-found'),
+    (500, 'server-error'),
+])
+def test_error_views(client, status_code, view_name, settings):
+    # Test normal error views for main site.
+    url = reverse('error-views:{}'.format(view_name))
+    response = client.get(url)
+    assert response.status_code == status_code
+    template_names = [t.name for t in response.templates if t.name is not None]
+    assert 'site_utils/error.html' in template_names, response.content
+
+    # Test alternate error views for admin site.
+    url = reverse('admin-error-views:{}'.format(view_name))
+    response = client.get(url)
+    assert response.status_code == status_code
+    template_names = [t.name for t in response.templates if t.name is not None]
+    assert 'admin/error.html' in template_names
+
+
+def test_site_cleanup(content_type_model, db_connection, command_runner, settings):
+    # Create dummy content type.
+    assert not content_type_model.objects.filter(app_label='myapp').exists()
+    content_type_model.objects.create(app_label='myapp', model='mymodel')
+    assert content_type_model.objects.filter(app_label='myapp').exists()
+
+    # Create extra database table.
+    all_tables = set(db_connection.introspection.table_names())
+    assert 'myapp_othermodel' not in all_tables
+    cursor = db_connection.cursor()
+    sql = '''CREATE TABLE myapp_othermodel (id INTEGER PRIMARY KEY);'''
+    cursor.execute(sql)
+    all_tables = set(db_connection.introspection.table_names())
+    assert 'myapp_othermodel' in all_tables
+
+    # Run command with dry-run option. Nothing should have changed.
+    result = command_runner('site_cleanup', dry_run=True, verbosity=2)
+    assert result[0] is None
+    assert content_type_model.objects.filter(app_label='myapp').exists()
+    all_tables = set(db_connection.introspection.table_names())
+    assert 'myapp_othermodel' in all_tables
+
+    # Run command.  Extra content type and table should be gone.
+    result = command_runner('site_cleanup')
+    assert result[0] is None
+    assert not content_type_model.objects.filter(app_label='myapp').exists()
+    all_tables = set(db_connection.introspection.table_names())
+    assert 'myapp_othermodel' not in all_tables
+
+    # Change setting to refer to a nonexistent function, which should raise an exception.
+    settings.SITE_CLEANUP_FUNCTIONS = ['somepackage.somemodule.somefunction']
+    result = command_runner('site_cleanup')
+    assert isinstance(result[0], Exception)
+
+    # Change setting to our own function and verify it gets called.
+    settings.SITE_CLEANUP_FUNCTIONS = ['test_project.test_app.tests.site_cleanup_function']
+    result = command_runner('site_cleanup')
+    assert result[0] is None
+    assert site_cleanup_function.has_been_called
+
+
+def test_site_config(site_model, command_runner, settings):
+    # Get current site.
+    site = site_model.objects.get_current()
+    assert site.name == 'example.com'
+    assert site.domain == 'example.com'
+
+    # With no options and verbosity=1, should display the current site.
+    result = command_runner('site_config', verbosity=1)
+    assert result[0] is None
+    assert 'Name="{}"'.format(site.name) in result[1]
+    assert 'Domain="{}"'.format(site.domain) in result[1]
+    site.refresh_from_db()
+    assert site.name == 'example.com'
+    assert site.domain == 'example.com'
+
+    # Change only the name.
+    result = command_runner('site_config', _name='example net site')
+    assert result[0] is None
+    site.refresh_from_db()
+    assert site.name == 'example net site'
+    assert site.domain == 'example.com'
+
+    # Change only the domain.
+    result = command_runner('site_config', domain='example.net')
+    assert result[0] is None
+    site.refresh_from_db()
+    assert site.name == 'example net site'
+    assert site.domain == 'example.net'
+
+    # Change both name and domain.
+    result = command_runner('site_config', _name='example org site', domain='example.org')
+    assert result[0] is None
+    site.refresh_from_db()
+    assert site.name == 'example org site'
+    assert site.domain == 'example.org'
+
+    # Remove django.contrib.sites and try to run the command.
+    settings.INSTALLED_APPS = (x for x in settings.INSTALLED_APPS if x != 'django.contrib.sites')
+    result = command_runner('site_config')
+    assert isinstance(result[0], Exception)
+
+
+def test_site_notify_default(command_runner, mailoutbox, settings):
+    # Send to default recipients (admins).
+    assert settings.ADMINS
+    result = command_runner('site_notify')
+    assert result[0] is None
+    assert len(mailoutbox) == 1
+    msg = mailoutbox[0]
+    expected_emails = set([x[1] for x in settings.ADMINS])
+    for recipient in msg.to:
+        realname, email_address = email.utils.parseaddr(recipient)
+        assert email_address in expected_emails
+        expected_emails.remove(email_address)
+    assert not expected_emails
+
+
+def test_site_notify_managers(command_runner, mailoutbox, settings):
+    # Send to addresses listed in settings.MANAGERS.
+    assert settings.MANAGERS
+    result = command_runner('site_notify', managers=True)
+    assert result[0] is None
+    assert len(mailoutbox) == 1
+    msg = mailoutbox[0]
+    expected_emails = set([x[1] for x in settings.MANAGERS])
+    for recipient in msg.to:
+        realname, email_address = email.utils.parseaddr(recipient)
+        assert email_address in expected_emails
+        expected_emails.remove(email_address)
+    assert not expected_emails
+
+
+def test_site_notify_superusers(user_model, super_user, inactive_super_user,
+                                command_runner, mailoutbox):
+    # Send to active superusers.
+    result = command_runner('site_notify', superusers=True)
+    assert result[0] is None
+    assert len(mailoutbox) == 1
+    msg = mailoutbox[0]
+    users = user_model.objects.filter(is_active=True, is_superuser=True)
+    expected_emails = set(users.values_list('email', flat=True))
+    for recipient in msg.to:
+        realname, email_address = email.utils.parseaddr(recipient)
+        assert email_address in expected_emails
+        expected_emails.remove(email_address)
+    assert not expected_emails
+
+
+def test_site_notify_staff(user_model, super_user, inactive_super_user,
+                           staff_user, manager_staff_user, command_runner,
+                           mailoutbox):
+    # Send to active staff users.
+    result = command_runner('site_notify', staff=True)
+    assert result[0] is None
+    assert len(mailoutbox) == 1
+    msg = mailoutbox[0]
+    users = user_model.objects.filter(is_active=True, is_staff=True)
+    expected_emails = set(users.values_list('email', flat=True))
+    for recipient in msg.to:
+        realname, email_address = email.utils.parseaddr(recipient)
+        assert email_address in expected_emails
+        expected_emails.remove(email_address)
+    assert not expected_emails
+
+
+def test_site_notify_managers_staff(user_model, super_user, inactive_super_user,
+                                    staff_user, manager_staff_user,
+                                    command_runner, mailoutbox, settings):
+    # Send to managers and active staff. Email address in both lists should
+    # only be listed once.
+    result = command_runner('site_notify', managers=True, staff=True)
+    assert result[0] is None
+    assert len(mailoutbox) == 1
+    msg = mailoutbox[0]
+    users = user_model.objects.filter(is_active=True, is_staff=True)
+    expected_emails = set(users.values_list('email', flat=True))
+    expected_emails.update([x[1] for x in settings.MANAGERS])
+    for recipient in msg.to:
+        realname, email_address = email.utils.parseaddr(recipient)
+        assert email_address in expected_emails
+        expected_emails.remove(email_address)
+    assert not expected_emails
+
+
+def test_site_notify_all(user_model, super_user, inactive_super_user,
+                         staff_user, manager_staff_user, command_runner,
+                         mailoutbox, settings):
+    # Send to all admins, managers and staff.
+    result = command_runner('site_notify', all_users=True)
+    assert result[0] is None
+    assert len(mailoutbox) == 1
+    msg = mailoutbox[0]
+    users = user_model.objects.filter(is_active=True, is_staff=True)
+    expected_emails = set(users.values_list('email', flat=True))
+    users = user_model.objects.filter(is_active=True, is_superuser=True)
+    expected_emails.update(users.values_list('email', flat=True))
+    expected_emails.update([x[1] for x in settings.MANAGERS])
+    expected_emails.update([x[1] for x in settings.ADMINS])
+    for recipient in msg.to:
+        realname, email_address = email.utils.parseaddr(recipient)
+        assert email_address in expected_emails
+        expected_emails.remove(email_address)
+    assert not expected_emails
+
+
+def test_site_notify_bcc(command_runner, mailoutbox, settings):
+    # Send to default recipients (admins) bcc'ed.
+    result = command_runner('site_notify', bcc=True)
+    assert result[0] is None
+    assert len(mailoutbox) == 1
+    msg = mailoutbox[0]
+    expected_emails = set([x[1] for x in settings.ADMINS])
+    assert not msg.to
+    for recipient in msg.bcc:
+        realname, email_address = email.utils.parseaddr(recipient)
+        assert email_address in expected_emails
+        expected_emails.remove(email_address)
+    assert not expected_emails
+
+
+def test_site_notify_change_default(command_runner, mailoutbox, settings):
+    # Change default recipients via setting.
+    assert settings.ADMINS
+    assert settings.MANAGERS
+    settings.SITE_NOTIFY_DEFAULT_RECIPIENTS = ('admins', 'managers')
+    result = command_runner('site_notify')
+    assert result[0] is None
+    assert len(mailoutbox) == 1
+    msg = mailoutbox[0]
+    expected_emails = set([x[1] for x in settings.ADMINS])
+    expected_emails.update([x[1] for x in settings.MANAGERS])
+    for recipient in msg.to:
+        realname, email_address = email.utils.parseaddr(recipient)
+        assert email_address in expected_emails
+        expected_emails.remove(email_address)
+    assert not expected_emails
+
+
+def test_site_notify_subject_body(command_runner, mailoutbox):
+    # Positional arguments should become message subject, then body.
+    result = command_runner('site_notify', 'test_subject', 'test_body', 'test_body2')
+    assert result[0] is None
+    assert len(mailoutbox) == 1
+    msg = mailoutbox[0]
+    assert 'test_subject' in msg.subject
+    assert 'test_body' in msg.body
+    assert 'test_body2' in msg.body
+
+
+def test_site_notify_templates(command_runner, mailoutbox):
+    # Override subject and body templates via command line arguments.
+    result = command_runner('site_notify',
+                            subject_template='new_site_notify_subject.txt',
+                            body_template='new_site_notify_body.txt')
+    assert result[0] is None
+    assert len(mailoutbox) == 1
+    msg = mailoutbox[0]
+    assert 'NEW_SUBJECT' in msg.subject
+    assert 'NEW_BODY_SUFFIX' in msg.body
+
+    
+def test_site_notify_template_settings(command_runner, mailoutbox, settings):
+    # Override subject and body templates via settings.
+    settings.SITE_NOTIFY_SUBJECT_TEMPLATE = 'new_site_notify_subject.txt'
+    settings.SITE_NOTIFY_BODY_TEMPLATE = 'new_site_notify_body.txt'
+    result = command_runner('site_notify')
+    assert result[0] is None
+    assert len(mailoutbox) == 1
+    msg = mailoutbox[0]
+    assert 'NEW_SUBJECT' in msg.subject
+    assert 'NEW_BODY_SUFFIX' in msg.body
+
+
+def test_site_notify_auth_not_installed(command_runner, mailoutbox, settings):
+    # Send to default recipients (admins).
+    settings.INSTALLED_APPS = (x for x in settings.INSTALLED_APPS if x != 'django.contrib.auth')
+    result = command_runner('site_notify')
+    assert result[0] is None
+    result = command_runner('site_notify', superusers=True)
+    assert result[0] is None
+
+
+class Foo:
+    
+
 
     def _call_site_dump(self, *app_labels, **options):
         options.setdefault('verbosity', 1)
@@ -214,11 +438,7 @@ class TestSiteUtils(TestCase):
                             relobj = field.rel.to.get(pk=value)
                 elif field.rel:
                     if isinstance(field_value, (list, tuple)):
-                        if field_value and isinstance(field_value[0], (list, tuple)):
-                            value = field_value[0]
-                        else:
-                            value = field_value
-                        relobj = field.rel.to.objects.get_by_natural_key(*value)
+                        relobj = field.rel.to.objects.get_by_natural_key(*field_value)
                     else:
                         relobj = field.rel.to.get(pk=field_value)
                 else:
@@ -298,157 +518,6 @@ class TestSiteUtils(TestCase):
         self.assertEqual(result[0], None)
 
         raise NotImplementedError
-
-    def test_site_notify(self):
-        # Create superuser.
-        super_user = User.objects.create_superuser('superfred', 'fred@ixmm.net', 'fredsPASS')
-        super_user.first_name = 'Super'
-        super_user.last_name = 'Fred'
-        super_user.save()
-        # Create inactive superuser.
-        inactive_super_user = User.objects.create_superuser('deadfred', 'fred2@ixmm.net', 'fredsPASS')
-        inactive_super_user.first_name = 'Dead'
-        inactive_super_user.last_name = 'Fred'
-        inactive_super_user.is_active = False
-        inactive_super_user.save()
-        # Create staff user.
-        staff_user = User.objects.create_user('staffbob', 'bob@ixmm.net', 'bobsPASS')
-        staff_user.first_name = 'Staff'
-        staff_user.last_name = 'Bob'
-        staff_user.is_staff = True
-        staff_user.save()
-        # Create staff user who is also in settings.MANAGERS.
-        manager_staff_user = User.objects.create_user('david', 'david@ninemoreminutes.com', 'davesPASS')
-        manager_staff_user.first_name = 'David'
-        manager_staff_user.last_name = 'Horton'
-        manager_staff_user.is_staff = True
-        manager_staff_user.save()
-        self.assertEqual(len(mail.outbox), 0)
-        # Send to default recipients (admins).
-        result = self._call_command('site_notify')
-        self.assertEqual(result[0], None)
-        self.assertEqual(len(mail.outbox), 1)
-        msg = mail.outbox[-1]
-        expected_emails = set([x[1] for x in settings.ADMINS])
-        for recipient in msg.to:
-            realname, email_address = email.utils.parseaddr(recipient)
-            self.assertTrue(email_address in expected_emails)
-            expected_emails.remove(email_address)
-        self.assertFalse(expected_emails)
-        # Send to managers only.
-        result = self._call_command('site_notify', managers=True)
-        self.assertEqual(result[0], None)
-        self.assertEqual(len(mail.outbox), 2)
-        msg = mail.outbox[-1]
-        expected_emails = set([x[1] for x in settings.MANAGERS])
-        for recipient in msg.to:
-            realname, email_address = email.utils.parseaddr(recipient)
-            self.assertTrue(email_address in expected_emails)
-            expected_emails.remove(email_address)
-        self.assertFalse(expected_emails)
-        # Send to active superusers only.
-        result = self._call_command('site_notify', superusers=True)
-        self.assertEqual(result[0], None)
-        self.assertEqual(len(mail.outbox), 3)
-        msg = mail.outbox[-1]
-        users = User.objects.filter(is_active=True, is_superuser=True)
-        expected_emails = set(users.values_list('email', flat=True))
-        for recipient in msg.to:
-            realname, email_address = email.utils.parseaddr(recipient)
-            self.assertTrue(email_address in expected_emails)
-            expected_emails.remove(email_address)
-        self.assertFalse(expected_emails)
-        # Send to active staff only.
-        result = self._call_command('site_notify', staff=True)
-        self.assertEqual(result[0], None)
-        self.assertEqual(len(mail.outbox), 4)
-        msg = mail.outbox[-1]
-        users = User.objects.filter(is_active=True, is_staff=True)
-        expected_emails = set(users.values_list('email', flat=True))
-        for recipient in msg.to:
-            realname, email_address = email.utils.parseaddr(recipient)
-            self.assertTrue(email_address in expected_emails)
-            expected_emails.remove(email_address)
-        self.assertFalse(expected_emails)
-        # Send to managers and active staff. Email address in both lists should
-        # only be listed once.
-        result = self._call_command('site_notify', managers=True, staff=True)
-        self.assertEqual(result[0], None)
-        self.assertEqual(len(mail.outbox), 5)
-        msg = mail.outbox[-1]
-        users = User.objects.filter(is_active=True, is_staff=True)
-        expected_emails = set(users.values_list('email', flat=True))
-        expected_emails.update([x[1] for x in settings.MANAGERS])
-        for recipient in msg.to:
-            realname, email_address = email.utils.parseaddr(recipient)
-            self.assertTrue(email_address in expected_emails)
-            expected_emails.remove(email_address)
-        self.assertFalse(expected_emails)
-        # Send to all admins, managers and staff.
-        result = self._call_command('site_notify', all=True)
-        self.assertEqual(result[0], None)
-        self.assertEqual(len(mail.outbox), 6)
-        msg = mail.outbox[-1]
-        users = User.objects.filter(is_active=True, is_staff=True)
-        expected_emails = set(users.values_list('email', flat=True))
-        users = User.objects.filter(is_active=True, is_superuser=True)
-        expected_emails.update(users.values_list('email', flat=True))
-        expected_emails.update([x[1] for x in settings.MANAGERS])
-        expected_emails.update([x[1] for x in settings.ADMINS])
-        for recipient in msg.to:
-            realname, email_address = email.utils.parseaddr(recipient)
-            self.assertTrue(email_address in expected_emails)
-            expected_emails.remove(email_address)
-        self.assertFalse(expected_emails)
-        # Send to default recipients (admins) bcc'ed.
-        result = self._call_command('site_notify', bcc=True)
-        self.assertEqual(result[0], None)
-        self.assertEqual(len(mail.outbox), 7)
-        msg = mail.outbox[-1]
-        expected_emails = set([x[1] for x in settings.ADMINS])
-        self.assertFalse(msg.to)
-        for recipient in msg.bcc:
-            realname, email_address = email.utils.parseaddr(recipient)
-            self.assertTrue(email_address in expected_emails)
-            expected_emails.remove(email_address)
-        self.assertFalse(expected_emails)
-        # Change default recipients via setting.
-        settings.SITE_NOTIFY_DEFAULT_RECIPIENTS = ('admins', 'managers')
-        result = self._call_command('site_notify')
-        self.assertEqual(result[0], None)
-        self.assertEqual(len(mail.outbox), 8)
-        msg = mail.outbox[-1]
-        expected_emails = set([x[1] for x in settings.ADMINS])
-        expected_emails.update([x[1] for x in settings.MANAGERS])
-        for recipient in msg.to:
-            realname, email_address = email.utils.parseaddr(recipient)
-            self.assertTrue(email_address in expected_emails)
-            expected_emails.remove(email_address)
-        self.assertFalse(expected_emails)
-        # Positional arguments should become message subject, then body.
-        result = self._call_command('site_notify', 'test_subject', 'test_body', 'test_body2')
-        self.assertEqual(result[0], None)
-        self.assertEqual(len(mail.outbox), 9)
-        msg = mail.outbox[-1]
-        self.assertTrue('test_subject' in msg.subject)
-        self.assertTrue('test_body' in msg.body)
-        self.assertTrue('test_body2' in msg.body)
-        # Override subject and body templates via command line arguments.
-        result = self._call_command('site_notify', subject_template='new_site_notify_subject.txt', body_template='new_site_notify_body.txt')
-        self.assertEqual(result[0], None)
-        self.assertEqual(len(mail.outbox), 10)
-        msg = mail.outbox[-1]
-        self.assertTrue('NEW_SUBJECT' in msg.subject)
-        self.assertTrue('NEW_BODY_SUFFIX' in msg.body)
-        # Override subject and body templates via settings.
-        settings.SITE_NOTIFY_SUBJECT_TEMPLATE = 'new_site_notify_subject.txt'
-        settings.SITE_NOTIFY_BODY_TEMPLATE = 'new_site_notify_body.txt'
-        result = self._call_command('site_notify')
-        self.assertEqual(result[0], None)
-        self.assertEqual(len(mail.outbox), 11)
-        msg = mail.outbox[-1]
-        self.assertTrue('NEW_SUBJECT' in msg.subject)
-        self.assertTrue('NEW_BODY_SUFFIX' in msg.body)
 
     def _get_command_class(self, name):
         app_name = get_commands()[name]
