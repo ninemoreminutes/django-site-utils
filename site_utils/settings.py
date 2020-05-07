@@ -1,19 +1,23 @@
+# Python
+from __future__ import unicode_literals
+
 # Django
-from django.utils.translation import ugettext_lazy as _
+from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 
 
-SITE_CLEANUP_FUNCTIONS = (
+DEFAULT_SITE_CLEANUP_FUNCTIONS = (
     'site_utils.cleanup.cleanup_stale_content_types',
     'site_utils.cleanup.cleanup_unused_database_tables',
 )
 
-SITE_NOTIFY_DEFAULT_RECIPIENTS = ('admins',)
+DEFAULT_SITE_NOTIFY_DEFAULT_RECIPIENTS = ('admins',)
 
-SITE_NOTIFY_SUBJECT_TEMPLATE = 'site_utils/notify_subject.txt'
+DEFAULT_SITE_NOTIFY_SUBJECT_TEMPLATE = 'site_utils/notify_subject.txt'
 
-SITE_NOTIFY_BODY_TEMPLATE = 'site_utils/notify_body.txt'
+DEFAULT_SITE_NOTIFY_BODY_TEMPLATE = 'site_utils/notify_body.txt'
 
-SITE_UPDATE_COMMANDS = {
+DEFAULT_SITE_UPDATE_COMMANDS = {
     'default': [
         ('check', [], {}, None),
         ('migrate', [], {'fake_initial': True}, None),
@@ -21,7 +25,7 @@ SITE_UPDATE_COMMANDS = {
     ],
 }
 
-SITE_ERROR_MESSAGES = {
+DEFAULT_SITE_ERROR_MESSAGES = {
     400: (
         _('Bad Request'),
         _('The request could not be understood by the server.'),
@@ -52,6 +56,21 @@ SITE_ERROR_MESSAGES = {
     ),
 }
 
-SITE_ERROR_TEMPLATES = [
+DEFAULT_SITE_ERROR_TEMPLATES = [
     (r'', 'site_utils/error.html'),
 ]
+
+
+def get_site_utils_setting(name, merge_dicts=False):
+    try:
+        default_setting = globals()['DEFAULT_{}'.format(name)]
+        setting = getattr(settings, name, None)
+        if merge_dicts:
+            setting_dict = dict(default_setting.items())
+            if setting:
+                setting_dict.update(setting.items())
+            return setting_dict
+        else:
+            return setting or default_setting
+    except KeyError:
+        raise RuntimeError('invalid setting name: {}'.format(name))

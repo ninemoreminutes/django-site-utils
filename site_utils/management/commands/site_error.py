@@ -1,4 +1,5 @@
 # Python
+from __future__ import unicode_literals
 import os
 
 # Django
@@ -13,7 +14,7 @@ except ImportError:
     bs4 = None
 
 # Django-Site-Utils
-from site_utils.views import handle_error
+from ...views import handle_error
 
 
 class Command(BaseCommand):

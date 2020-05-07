@@ -51,9 +51,8 @@ The default value if not specified is::
 
    SITE_UPDATE_COMMANDS = {
       'default': [
-         'syncdb',
-         {'command': 'migrate', 'ifapp': 'south'},
-         {'command': 'collectstatic', 'ifapp': 'staticfiles'},
+         'check',
+         ('migrate, (), {'fake_initial': True}),
+         ('collectstatic', (), {} 'staticfiles'),
       ]
    }
-

@@ -1,0 +1,23 @@
+# Requirements for dev/test environment.
+
+bumpversion
+django
+django-debug-toolbar
+django-sortedm2m>=1.4
+django-extensions
+# django-fortunecookie
+django-polymorphic
+django-storages
+djangorestframework
+flake8==3.7.8
+ipython
+Pillow
+pycodestyle
+pytest
+pytest-cov
+pytest-django
+pytest-flake8
+pytest-runner
+sphinx
+tox
+twine

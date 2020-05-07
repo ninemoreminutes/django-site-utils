@@ -1,3 +1,6 @@
+# Python
+from __future__ import unicode_literals
+
 # Django
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import Http404

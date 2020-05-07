@@ -1,5 +1,9 @@
 # Python
-import StringIO
+from __future__ import unicode_literals
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 import sys
 
 # Py.Test
@@ -20,6 +24,14 @@ def content_type_model(apps):
 @pytest.fixture
 def site_model(apps):
     return apps.get_model('sites', 'Site')
+
+
+@pytest.fixture
+def current_site(site_model):
+    site = site_model.objects.get_current()
+    assert site.name == 'example.com'
+    assert site.domain == 'example.com'
+    return site
 
 
 @pytest.fixture
@@ -77,18 +89,18 @@ def db_connection(db):
 def command_runner(db):
     from django.core.management import call_command
 
-    def f(name, *args, **options):
+    def f(*args, **options):
         options.setdefault('verbosity', 0)
         original_stdout = sys.stdout
         original_stderr = sys.stderr
-        sys.stdout = StringIO.StringIO()
-        sys.stderr = StringIO.StringIO()
+        sys.stdout = StringIO()
+        sys.stderr = StringIO()
         result = None
         try:
-            result = call_command(name, *args, **options)
-        except Exception, e:
+            result = call_command(*args, **options)
+        except Exception as e:
             result = e
-        except SystemExit, e:
+        except SystemExit as e:
             result = e
         finally:
             captured_stdout = sys.stdout.getvalue()

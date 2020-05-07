@@ -1,0 +1,12 @@
+*.pyc
+__pycache__
+*.sqlite3
+/*.egg-info
+/.coverage
+.env
+/.tox
+/test_project/public
+/.pytest_cache
+/build
+/dist
+/docs/_build

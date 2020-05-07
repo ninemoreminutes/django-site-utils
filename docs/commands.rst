@@ -7,8 +7,6 @@ site-wide administrative actions.
 site_cleanup
 ------------
 
-
-
 site_config
 -----------
 
@@ -18,7 +16,6 @@ site_dump
 site_error
 ----------
 
-
 site_load
 ---------
 
@@ -27,4 +24,3 @@ site_notify
 
 site_update
 -----------
-

@@ -1,3 +1,6 @@
+# Python
+from __future__ import unicode_literals
+
 # Django
 from django.conf import settings
 from django.conf.urls import include, url
@@ -21,7 +24,7 @@ if 'django.contrib.admin' in settings.INSTALLED_APPS:
     #     url(r'^$', 'django.views.generic.simpleredirect_to', {'url': '/admin/'}),
     # ]
     urlpatterns += [
-        url(r'^admin-site/', include(admin.site.urls)),
+        url(r'^admin-site/', admin.site.urls),
     ]
 
 if 'django.contrib.staticfiles' in settings.INSTALLED_APPS and settings.DEBUG:

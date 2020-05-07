@@ -1,7 +1,9 @@
+# flake8: noqa
+
 # Python
+from __future__ import unicode_literals
 import sys
 import zipfile
-from optparse import make_option
 import traceback
 
 # Django
@@ -12,7 +14,7 @@ from django.core import serializers
 from django.core.management.color import no_style
 from django.db import (connections, router, DEFAULT_DB_ALIAS,
       IntegrityError, DatabaseError)
-from django.utils.itercompat import product
+#from django.utils.itercompat import product
 
 try:
     import bz2
@@ -25,14 +27,15 @@ class Command(BaseCommand):
     """Load the contents of a site from a site_dump backup."""
 
     help = 'Installs the named fixture(s) in the database.'
-    args = "fixture [fixture ...]"
 
-    option_list = BaseCommand.option_list + (
-        make_option('--database', action='store', dest='database',
-                    default=DEFAULT_DB_ALIAS, help='Nominates a specific '
-                    'database to load fixtures into. Defaults to the "default" '
-                    'database.'),
-    )
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--database',
+            action='store',
+            dest='database',
+            default=DEFAULT_DB_ALIAS,
+            help='Nominates a specific database to load fixtures into. Defaults to the "default" database.',
+        )
 
     def handle(self, *dump_files, **options):
         verbosity = int(options.get('verbosity'))
@@ -41,7 +44,7 @@ class Command(BaseCommand):
         connection = connections[using]
 
         if not dump_files:
-            print >> sys.stderr, 'No site dump archives specified.  Please provide the path of at least one on the command line.'
+            self.stderr.write('No site dump archives specified.  Please provide the path of at least one on the command line.\n')
             return
 
         # commit is a stealth option - it isn't really useful as
@@ -88,14 +91,14 @@ class Command(BaseCommand):
                                 models.add(obj.object.__class__)
                                 try:
                                     obj.save(using=using)
-                                except (DatabaseError, IntegrityError), e:
+                                except (DatabaseError, IntegrityError) as e:
                                     msg = "Could not load %(app_label)s.%(object_name)s(pk=%(pk)s): %(error_msg)s" % {
                                             'app_label': obj.object._meta.app_label,
                                             'object_name': obj.object._meta.object_name,
                                             'pk': obj.object.pk,
                                             'error_msg': e
                                         }
-                                    raise e.__class__, e.__class__(msg), sys.exc_info()[2]
+                                    raise e.__class__(e.__class__(msg), sys.exc_info()[2])
 
                         loaded_object_count += loaded_objects_in_fixture
                         fixture_object_count += objects_in_fixture
@@ -165,7 +168,7 @@ class Command(BaseCommand):
         if commit:
             connection.close()
 
-    @transaction.commit_on_success
+    #@transaction.commit_on_success
     def handle2(self, *args, **options):
         raise NotImplementedError # FIXME
 

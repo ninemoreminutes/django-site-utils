@@ -1,4 +1,5 @@
 # Python
+from __future__ import unicode_literals
 import collections
 
 # Django
@@ -8,12 +9,8 @@ from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 
 # Django-Site-Utils
-from site_utils.settings import (
-    SITE_NOTIFY_DEFAULT_RECIPIENTS,
-    SITE_NOTIFY_SUBJECT_TEMPLATE,
-    SITE_NOTIFY_BODY_TEMPLATE,
-)
-from site_utils.utils import auth_is_installed
+from .settings import get_site_utils_setting
+from .utils import auth_is_installed
 
 __all__ = ['notify_users']
 
@@ -38,7 +35,7 @@ def notify_users(subject_text=None, body_text=None, all_users=False,
         staff = False
         user_model = None
     if not (admins or managers or superusers or staff):
-        default_recipients = set(getattr(settings, 'SITE_NOTIFY_DEFAULT_RECIPIENTS', SITE_NOTIFY_DEFAULT_RECIPIENTS))
+        default_recipients = set(get_site_utils_setting('SITE_NOTIFY_DEFAULT_RECIPIENTS'))
         admins = 'admins' in default_recipients
         managers = 'managers' in default_recipients
         if auth_is_installed():
@@ -62,8 +59,8 @@ def notify_users(subject_text=None, body_text=None, all_users=False,
 
     # Render subject and body of notification.
     # TODO: Future feature: render subject/body per recipient.
-    subject_template = subject_template or getattr(settings, 'SITE_NOTIFY_SUBJECT_TEMPLATE', SITE_NOTIFY_SUBJECT_TEMPLATE)
-    body_template = body_template or getattr(settings, 'SITE_NOTIFY_BODY_TEMPLATE', SITE_NOTIFY_BODY_TEMPLATE)
+    subject_template = subject_template or get_site_utils_setting('SITE_NOTIFY_SUBJECT_TEMPLATE')
+    body_template = body_template or get_site_utils_setting('SITE_NOTIFY_BODY_TEMPLATE')
     subject_text = subject_text if subject_text is not None else 'Site Notification'
     if isinstance(body_text, (list, tuple)):
         body_text = '\n\n'.join(body_text)

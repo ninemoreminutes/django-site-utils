@@ -1,19 +1,24 @@
 # Python
+from __future__ import unicode_literals
 import os
+
+# Six
+import six
 
 # Django
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.core.management import call_command, CommandError
+from django.core.management import get_commands, load_command_class, call_command, CommandError
 
 # Django-Site-Utils
-from site_utils.utils import app_is_installed
-from site_utils.settings import SITE_UPDATE_COMMANDS
+from ...utils import app_is_installed
+from ...settings import get_site_utils_setting
 
 
 class Command(BaseCommand):
 
-    help = 'Execute all management commands for a normal code/database update.'
+    help = 'Execute multiple management commands.'
+    requires_system_checks = False
 
     def add_arguments(self, parser):
         parser.add_argument('--noinput', '--no-input', action='store_false', dest='interactive', default=True,
@@ -23,10 +28,17 @@ class Command(BaseCommand):
         parser.add_argument('group', nargs='*',
                             help='Specific group of update commands to run.')
 
+    def _get_command_instance(self, name):
+        app_name = get_commands()[name]
+        if isinstance(app_name, BaseCommand):
+            return app_name
+        else:
+            return load_command_class(app_name, name)
+
     def _parse_cmd_specs(self, cmd_specs):
         parsed_cmd_specs = []
         for cmd_spec in cmd_specs:
-            if isinstance(cmd_spec, basestring):
+            if isinstance(cmd_spec, six.string_types):
                 cmd_opts = [cmd_spec, (), {}, None]
             elif isinstance(cmd_spec, (list, tuple)):
                 cmd_opts = (list(cmd_spec) + [None, None, None, None])[:4]
@@ -34,7 +46,7 @@ class Command(BaseCommand):
                     raise CommandError('no command')
                 cmd_opts[1] = cmd_opts[1] or ()
                 cmd_opts[2] = cmd_opts[2] or {}
-                if isinstance(cmd_opts[3], basestring):
+                if isinstance(cmd_opts[3], six.string_types):
                     cmd_opts[3] = [cmd_opts[3]]
             else:
                 raise CommandError('unknown command spec')
@@ -46,7 +58,7 @@ class Command(BaseCommand):
         interactive = bool(options.get('interactive', True))
         list_groups = bool(options.get('list_groups', False))
         groups = options.get('group', None) or []
-        site_update_commands = getattr(settings, 'SITE_UPDATE_COMMANDS', SITE_UPDATE_COMMANDS)
+        site_update_commands = get_site_utils_setting('SITE_UPDATE_COMMANDS', merge_dicts=True)
 
         if not groups:
             if list_groups:
@@ -59,17 +71,18 @@ class Command(BaseCommand):
 
         for group in groups:
             if verbosity >= 1 and list_groups:
-                self.stdout.write('{}{}\n'.format(group, ':' if verbosity >= 2 else ''))
+                msg = '[{}]'.format(group)
+                self.stdout.write(self.style.MIGRATE_HEADING(msg))
             elif verbosity >= 1 and not list_groups:
-                self.stdout.write('Running site_update commands from group {}.\n'.format(group))
+                msg = 'site_update: Running commands from group "{}".'.format(group)
+                self.stdout.write(self.style.MIGRATE_HEADING('=' * len(msg.strip())))
+                self.stdout.write(self.style.MIGRATE_HEADING(msg))
+                self.stdout.write(self.style.MIGRATE_HEADING('=' * len(msg.strip())))
             cmd_specs = self._parse_cmd_specs(site_update_commands[group])
             for cmd_spec in cmd_specs:
                 cmd_name = cmd_spec[0]
                 cmd_args = cmd_spec[1]
                 cmd_opts = cmd_spec[2]
-                if not list_groups:
-                    cmd_opts.setdefault('verbosity', verbosity)
-                    cmd_opts.setdefault('interactive', interactive)
                 cmd_display_args = ['{!r}'.format(a) for a in cmd_args]
                 cmd_display_args.extend(['{}={!r}'.format(k, v) for k, v in cmd_opts.items()])
                 cmd_apps = cmd_spec[3] or []
@@ -83,14 +96,29 @@ class Command(BaseCommand):
                     else:
                         cmd_skipped = ''
                     if verbosity >= 2:
-                        self.stdout.write('  - {} ({}){}\n'.format(cmd_name, ', '.join(cmd_display_args), cmd_skipped))
+                        msg = '{}({}){}'.format(cmd_name, ', '.join(cmd_display_args), cmd_skipped)
+                        self.stdout.write(self.style.MIGRATE_LABEL(msg))
                 else:
                     if cmd_apps_missing:
                         if verbosity >= 2:
-                            self.stdout.write('Skipping command {} ({} not installed).\n'.format(cmd_name, ', '.join(cmd_apps_missing)))
+                            msg = '\nsite_update: Skipping: {} ({} not installed).'.format(cmd_name, ', '.join(cmd_apps_missing))
+                            self.stdout.write(self.style.WARNING(msg))
                         continue
                     if verbosity >= 1:
-                        self.stdout.write('Running {} ({})\n'.format(cmd_name, ', '.join(cmd_display_args)))
+                        msg = '\nsite_update: Running {}({})'.format(cmd_name, ', '.join(cmd_display_args))
+                        self.stdout.write(self.style.MIGRATE_LABEL(msg))
+                        self.stdout.write(self.style.MIGRATE_LABEL('-' * len(msg.strip())))
+
+                    # Check if command supports an "interactive" argument.
+                    try:
+                        cmd_instance = self._get_command_instance(cmd_name)
+                    except KeyError:
+                        raise CommandError('Unknown command: {!r}'.format(cmd_name))
+                    cmd_parser = cmd_instance.create_parser('', cmd_name)
+                    if bool('interactive' in [opt.dest for opt in cmd_parser._actions]):
+                        cmd_opts.setdefault('interactive', interactive)
+                    cmd_opts.setdefault('verbosity', verbosity)
+
                     # Prevent collectstatic from failing when the clear option is
                     # specified and the static root doesn't exist.
                     if cmd_name == 'collectstatic' and cmd_opts.get('clear', False):

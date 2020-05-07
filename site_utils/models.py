@@ -1,1 +1,2 @@
-# Empty models file. Nothing to see here.
+# Python
+from __future__ import unicode_literals

@@ -1,10 +1,12 @@
+# Python
+from __future__ import unicode_literals
+
 # Django
-from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils.module_loading import import_string
 
 # Django-Site-Utils
-from site_utils.settings import SITE_CLEANUP_FUNCTIONS
+from ...settings import get_site_utils_setting
 
 
 class Command(BaseCommand):
@@ -21,7 +23,7 @@ class Command(BaseCommand):
         options['_command'] = self
         verbosity = int(options.get('verbosity', 1))
         site_cleanup_functions = []
-        for func_import in getattr(settings, 'SITE_CLEANUP_FUNCTIONS', SITE_CLEANUP_FUNCTIONS):
+        for func_import in get_site_utils_setting('SITE_CLEANUP_FUNCTIONS'):
             site_cleanup_functions.append(import_string(func_import))
         for func in site_cleanup_functions:
             if verbosity >= 2:

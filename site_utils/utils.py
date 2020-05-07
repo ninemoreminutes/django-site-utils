@@ -1,3 +1,6 @@
+# Python
+from __future__ import unicode_literals
+
 # Django
 from django.apps import apps
 
@@ -17,6 +20,6 @@ def app_is_installed(app_label):
 
 def auth_is_installed():
     """
-    Return whether django.contriba.auth is installed.
+    Return whether django.contrib.auth is installed.
     """
     return app_is_installed('django.contrib.auth')

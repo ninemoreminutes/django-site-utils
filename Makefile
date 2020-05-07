@@ -1,55 +1,98 @@
-.PHONY: core-requirements update-pip-requirements requirements \
-	clean-pyc develop check migrate runserver reports pep8 flake8 check8 \
-	test clean-tox tox clean-all ship-it
+PYTHON_MAJOR_MINOR := $(shell python -c "import sys; print('{0}{1}'.format(*sys.version_info))")
+REQUIREMENTS_TXT = requirements$(PYTHON_MAJOR_MINOR).txt
 
+.PHONY: core-requirements
 core-requirements:
-	pip install "pip>=9,<10" "setuptools>=20" "pip-tools>=1.9,<2"
+	pip install pip setuptools pip-tools
 
+.PHONY: update-core-requirements
 update-pip-requirements: core-requirements
-	pip-compile --upgrade requirements/dev.in
-	pip-compile --upgrade requirements/test.in
+	pip install -U pip setuptools pip-tools
+	pip-compile -U requirements.in -o $(REQUIREMENTS_TXT)
 
+.PHONY: requirements
 requirements: core-requirements
-	PIP_PROCESS_DEPENDENCY_LINKS=1 pip-sync requirements/dev.txt requirements/test.txt
+	pip-sync $(REQUIREMENTS_TXT)
 
-clean-pyc: requirements
+.PHONY: clean-pyc
+clean-pyc:
 	find . -iname "*.pyc" -delete
 	find . -iname __pycache__ | xargs rm -rf
 
-develop: clean-pyc
+.PHONY: develop
+develop: clean-pyc requirements
 	python setup.py develop
 
+.PHONY: check
 check: develop
 	python manage.py check
 
+.PHONY: migrate
 migrate: check
 	python manage.py migrate --noinput --fake-initial
 
+.PHONY: runserver
 runserver: migrate
 	python manage.py runserver
 
 reports:
 	mkdir -p $@
 
-pep8: reports requirements
+.PHONY: pycodestyle
+pycodestyle: reports requirements
 	set -o pipefail && $@ | tee reports/$@.report
 
+.PHONY: flake8
 flake8: reports requirements
 	set -o pipefail && $@ | tee reports/$@.report
 
-check8: pep8 flake8
+.PHONY: check8
+check8: pycodestyle flake8
 
-test: clean-pyc
+.PHONY: clean-coverage
+clean-coverage:
+	rm -f .coverage
+
+.PHONY: test
+test: clean-pyc requirements
 	python setup.py test
 
+.PHONY: clean-tox
 clean-tox:
 	rm -rf .tox
 
-tox: clean-pyc
+.PHONY: tox
+tox: clean-pyc requirements
 	tox
 
-clean-all: clean-pyc clean-tox
-	rm -rf *.egg-info .eggs .cache .coverage build reports
+.PHONY: clean-all
+clean-all: clean-pyc clean-coverage clean-tox
+	rm -rf *.dist-info *.egg-info .eggs .cache build reports
 
-ship-it: clean-pyc
-	python setup.py release_build register upload upload_docs
+.PHONY: bump-major
+bump-major: requirements
+	bumpversion major
+
+.PHONY: bump-minor
+bump-minor: requirements
+	bumpversion minor
+
+.PHONY: bump-patch
+bump-patch: requirements
+	bumpversion patch
+
+.PHONY: docs
+docs: requirements
+	python setup.py build_sphinx
+
+.PHONY: dev-build
+dev-build: requirements clean-pyc clean-coverage
+	python setup.py dev_build
+
+.PHONY: release-build
+release-build: requirements clean-pyc clean-coverage
+	python setup.py release_build
+
+.PHONY: ship-it
+ship-it: requirements clean-pyc clean-coverage
+	python setup.py ship_it

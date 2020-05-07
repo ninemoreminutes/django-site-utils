@@ -1,7 +1,11 @@
 # Python
+from __future__ import unicode_literals
 import datetime
 import decimal
 import json
+
+# Six
+import six
 
 # Django
 from django.conf import settings
@@ -9,7 +13,6 @@ from django.core.serializers import base
 from django.core.serializers.base import DeserializationError
 from django.db import models, DEFAULT_DB_ALIAS
 from django.utils.encoding import smart_text, is_protected_type
-from django.utils import six
 from django.utils.timezone import is_aware
 
 __all__ = ['SiteSerializer', 'SiteDeserializer', 'SiteJsonEncoder']
@@ -211,7 +214,7 @@ def SiteDeserializer(stream_or_string, **options):
 
             yield base.DeserializedObject(Model(**data), m2m_data)
 
-    except Exception, e:
+    except Exception as e:
         # Map to deserializer error
         raise DeserializationError(e)
 

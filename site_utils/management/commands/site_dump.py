@@ -1,103 +1,97 @@
+# flake8: noqa
+
 # Python
+from __future__ import unicode_literals
+from collections import OrderedDict
 import datetime
-from optparse import make_option
 import os
 import shutil
 import tempfile
 import zipfile
 
 # Django
+from django.apps import apps
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import BaseCommand, CommandError
-from django.core.management.commands.dumpdata import sort_dependencies
+#from django.core.management.commands.dumpdata import sort_dependencies
 from django.db import models
 from django.db import router, DEFAULT_DB_ALIAS
-from django.db.models import get_apps, get_models, get_model, get_app
-from django.utils.datastructures import SortedDict
+#from django.db.models import get_apps, get_models, get_model, get_app
+#from django.utils.datastructures import SortedDict
 
 # Django-Site-Utils
-from site_utils.serializers import SiteSerializer
+from ...serializers import SiteSerializer
 
 
 class Command(BaseCommand):
     """Dump the contents of the entire site, including media files."""
 
-    option_list = BaseCommand.option_list + (
-        make_option('-o', '--output', default=None, dest='output',
-                    help='Specifies the output archive (ZIP) filename.'),
-        make_option('--database', action='store', dest='database',
+    help = 'Dump the contents of the entire site, including media files, to ' \
+           'an archive containing a fixture of the given format.'
+
+    def add_arguments(self, parser):
+        parser.add_argument('-o', '--output', default=None, dest='output',
+                    help='Specifies the output archive (ZIP) filename.')
+        parser.add_argument('--database', action='store', dest='database',
                     default=DEFAULT_DB_ALIAS, help='Nominates a specific database to '
-                    'dump fixtures from. Defaults to the "default" database.'),
-        make_option('-e', '--exclude', dest='exclude', action='append',
+                    'dump fixtures from. Defaults to the "default" database.')
+        parser.add_argument('-e', '--exclude', dest='exclude', action='append',
                     default=[], help='An appname or appname.ModelName to exclude (use '
-                    'multiple --exclude to exclude multiple apps/models).'),
-        make_option('-a', '--all', action='store_true', dest='use_base_manager',
+                    'multiple --exclude to exclude multiple apps/models).')
+        parser.add_argument('-a', '--all', action='store_true', dest='use_base_manager',
                     default=True, help='Use Django\'s base manager to dump all models '
                     'stored in the database, including those that would otherwise be '
-                    'filtered or modified by a custom manager.'),
-    )
-    help = ('Dump the contents of the entire site, including media files, to '
-            'an archive containing a fixture of the given format.')
-    args = '[appname appname.ModelName ...]'
+                    'filtered or modified by a custom manager.')
+        parser.add_argument('modelspec', nargs='*', metavar='appname.ModelName',
+                            help='apps/models to dump')
 
     def build_app_dict(self, app_labels=[], excludes=[]):
         """Build dictionary of apps and models to dump."""
         # Determine excluded apps and models.
-        excluded_apps = set()
-        excluded_models = set()
+        excluded_model_classes = set()
         for exclude in excludes:
             if '.' in exclude:
                 app_label, model_name = exclude.split('.', 1)
-                model_obj = get_model(app_label, model_name)
-                if not model_obj:
+                model_class = apps.get_model(app_label, model_name)
+                if not model_class:
                     raise CommandError('Unknown model in excludes: %s' % exclude)
-                excluded_models.add(model_obj)
+                excluded_model_classes.add(model_class)
             else:
                 try:
-                    app_obj = get_app(exclude)
-                    excluded_apps.add(app_obj)
+                    app_config = apps.get_app_config(exclude)
+                    for model_class in app_config.get_models():
+                        excluded_model_classes.add(model_class)
                 except ImproperlyConfigured:
                     raise CommandError('Unknown app in excludes: %s' % exclude)
         # Build dictionary of apps (as keys) and a list of models (as values).
         if not app_labels:
-            app_labels = [app.__name__.split('.')[-2] for app in get_apps()]
-        app_list = SortedDict()
+            app_labels = [app_config.label for app_config in apps.get_app_configs()]
+        app_list = OrderedDict()
         for label in app_labels:
             try:
                 # App with model name.
-                app_label, model_label = label.split('.')
-                try:
-                    app = get_app(app_label)
-                except ImproperlyConfigured:
-                    raise CommandError('Unknown application: %s' % app_label)
-                if app in excluded_apps:
-                    continue
-                model = get_model(app_label, model_label)
-                if model is None:
+                app_label, model_name = label.split('.', 1)
+                model_class = apps.get_model(app_label, model_name)
+                if not model_class:
                     raise CommandError('Unknown model: %s.%s' % (app_label, model_label))
-                if model in excluded_models:
+                if model_class in excluded_model_classes:
                     continue
-                if app in app_list.keys():
-                    if app_list[app] and model not in app_list[app]:
-                        app_list[app].append(model)
-                else:
-                    app_list[app] = [model]
+                app_list_model_classes = app_list.setdefault(app_label, [])
+                if model_class not in app_list_model_classes:
+                    app_list_model_classes.append(model_class)
             except ValueError:
                 # App label only, with no model qualifier.
                 app_label = label
                 try:
-                    app = get_app(app_label)
+                    app_config = apps.get_app_config(app_label)
                 except ImproperlyConfigured:
                     raise CommandError('Unknown application: %s' % app_label)
-                if app in excluded_apps:
-                    continue
-                if app not in app_list.keys():
-                    app_list[app] = []
-                for model in get_models(app):
-                    if model in excluded_models:
+                for model_class in app_config.get_models():
+                    if model_class in excluded_model_classes:
                         continue
-                    if model not in app_list[app]:
-                        app_list[app].append(model)
+                    app_list_model_classes = app_list.setdefault(app_label, [])
+                    if model_class not in app_list_model_classes:
+                        app_list_model_classes.append(model_class)
         return app_list
 
     def save_file_field(self, obj, field, archive):
@@ -156,6 +150,8 @@ class Command(BaseCommand):
         show_traceback = options.get('traceback')
         use_base_manager = options.get('use_base_manager')
         app_dict = self.build_app_dict(app_labels, excludes)
+        print(app_dict)
+        return
         try:
             file_path = None
             archive = zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED)
@@ -171,7 +167,7 @@ class Command(BaseCommand):
             archive.write(file_path, 'site_dump.json')
             archive.writestr('site_dump_version', '1')
             archive.close()
-        except Exception, e:
+        except Exception as e:
             if 1 or show_traceback:
                 raise
             raise CommandError('Unable to serialize database: %s' % e)

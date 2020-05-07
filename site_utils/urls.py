@@ -2,13 +2,9 @@
 from django.conf.urls import url
 from django.utils.module_loading import import_string
 
-__all__ = ['handler400', 'handler403', 'handler404', 'handler500']
+# Django-Site-Utils
+from .handlers import handler400, handler403, handler404, handler500
 
-
-handler400 = 'site_utils.views.handle_400'
-handler403 = 'site_utils.views.handle_403'
-handler404 = 'site_utils.views.handle_404'
-handler500 = 'site_utils.views.handle_500'
 
 urlpatterns = [
     # FIXME: Make admin prefix configurable.

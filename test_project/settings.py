@@ -1,22 +1,12 @@
 # Python
+from __future__ import unicode_literals
 import os
-import sys
 
-# Django
-import django
-from django.conf import global_settings
-
-# Update this module's local settings from the global settings module.
-this_module = sys.modules[__name__]
-for setting in dir(global_settings):
-    if setting == setting.upper():
-        setattr(this_module, setting, getattr(global_settings, setting))
 
 # Absolute path to the directory containing this Django project.
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
 DEBUG = True
-TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
     ('Chris Church', 'chris@ninemoreminutes.com'),
@@ -47,14 +37,16 @@ MEDIA_URL = '/media/'
 
 MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'public', 'media')
 
-if django.VERSION >= (1, 10):
-    MIDDLEWARE = (locals().get('MIDDLEWARE', None) or ()) + (
-        'debug_toolbar.middleware.DebugToolbarMiddleware',
-    )
-else:
-    MIDDLEWARE_CLASSES = (locals().get('MIDDLEWARE_CLASSES', None) or ()) + (
-        'debug_toolbar.middleware.DebugToolbarMiddleware',
-    )
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
+]
 
 TEMPLATES = [
     {
@@ -86,11 +78,12 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'debug_toolbar',
     'django_extensions',
+    # 'fortunecookie',
+    'polymorphic',
+    # 'sortedm2m',
     # 'storages',
     'site_utils',
     'test_project.test_app',
-    'sortedm2m',
-    'fortunecookie',
 )
 
 INTERNAL_IPS = ('127.0.0.1',)
