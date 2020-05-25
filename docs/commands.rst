@@ -13,8 +13,8 @@ site_config
 site_dump
 ---------
 
-site_error
-----------
+site_error_page
+---------------
 
 site_load
 ---------

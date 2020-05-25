@@ -13,6 +13,18 @@ try:
 except ImportError:
     bs4 = None
 
+# LXML
+try:
+    import lxml
+except ImportError:
+    lxml = None
+
+# Html5Lib
+try:
+    import html5lib
+except ImportError:
+    html5lib = None
+
 # Django-Site-Utils
 from ...views import handle_error
 
@@ -21,23 +33,51 @@ class Command(BaseCommand):
 
     help = 'Generate static error pages.'
 
-    def parse_arguments(self, parser):
-        parser.add_argument('status', nargs='+', type=int,
-                            help='HTTP status code(s) of error pages to generate.')
-        parser.add_argument('--dest', default='.',
-                            help='Destination directory for generated pages.')
-        parser.add_argument('--prefix', default='',
-                            help='Prefix for generated filenames.')
-        parser.add_argument('--suffix', default='.html',
-                            help='Suffix for generated filenames.')
-        parser.add_argument('--url', default='/',
-                            help='URL prefix to determine which template to use.')
-        parser.add_argument('--no-clean-html', action='store_false', dest='clean_html', default=True,
-                            help='Disable cleaning tags from the generated HTML.')
+    def add_arguments(self, parser):
+        parser.add_argument(
+            'status',
+            nargs='+',
+            type=int,
+            help='HTTP status code(s) of error pages to generate.',
+        )
+        parser.add_argument(
+            '--dest',
+            default='.',
+            help='Destination directory for generated pages.',
+        )
+        parser.add_argument(
+            '--prefix',
+            default='',
+            help='Prefix for generated filenames.',
+        )
+        parser.add_argument(
+            '--suffix',
+            default='.html',
+            help='Suffix for generated filenames.',
+        )
+        parser.add_argument(
+            '--url',
+            default='/',
+            help='URL prefix to determine which template to use.',
+        )
+        parser.add_argument(
+            '--no-clean-html',
+            action='store_false',
+            dest='clean_html',
+            default=True,
+            help='Disable cleaning tags from the generated HTML.',
+        )
         # TODO: Add arguments to select which HTML tags to clean.
 
-    def clean_error_html(self, html):
-        bs = bs4.BeautifulSoup(html, 'lxml')
+    @staticmethod
+    def _clean_error_html(html):
+        if lxml is not None:
+            parser = 'lxml'
+        elif html5lib is not None:
+            parser = 'html5lib'
+        else:
+            parser = 'html.parser'
+        bs = bs4.BeautifulSoup(html, parser)
         # Remove script tags.
         for tag in bs.findAll('script'):
             tag.extract()
@@ -67,16 +107,18 @@ class Command(BaseCommand):
                 response = handle_error(request, status)
             html = response.content
             if clean_html:
-                html = self.clean_error_html(html)
+                html = self._clean_error_html(html)
             dest_file = os.path.join(dest_path, '{}{}{}'.format(prefix, status, suffix))
             if os.path.exists(dest_file):
-                old_html = open(dest_file, 'rb').read()
+                with open(dest_file, 'r') as df:
+                    old_html = df.read()
                 if html == old_html:
                     if verbosity >= 2:
                         self.stdout.write('No change to {} error for {} in {}.\n'.format(status, url, dest_file))
                     continue
             if not os.path.exists(dest_path):
                 os.makedirs(dest_path)
-            open(dest_file, 'wb').write(html)
+            with open(dest_file, 'w') as df:
+                df.write(html)
             if verbosity >= 1:
                 self.stdout.write('Rendered HTML for {} error for {} to {}.\n'.format(status, url, dest_file))

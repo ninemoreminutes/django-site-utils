@@ -30,6 +30,18 @@ def test_error_views(client, status_code, view_name, settings):
     assert 'admin/error.html' in template_names
 
 
-@pytest.mark.xfail()
-def test_site_error_command(command_runner, settings):
-    raise NotImplementedError
+@pytest.mark.parametrize('status_code', [400, 403, 404, 500, 502, 503, 504])
+def test_site_error_page_command(command_runner, settings, tmp_path, status_code):
+    result = command_runner('site_error_page', status_code, dest=str(tmp_path))
+    assert result[0] is None
+    error_page_path = tmp_path / '{}.html'.format(status_code)
+    assert error_page_path.exists()
+
+
+def test_site_error_page_command_options(command_runner, settings, tmp_path):
+    status_codes = [400, 403, 404, 500, 502, 503, 504]
+    result = command_runner('site_error_page', *status_codes, dest=str(tmp_path), prefix='error', suffix='.htm')
+    assert result[0] is None
+    for status_code in status_codes:
+        error_page_path = tmp_path / 'error{}.htm'.format(status_code)
+        assert error_page_path.exists()

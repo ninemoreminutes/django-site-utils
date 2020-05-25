@@ -1,5 +1,6 @@
 # Requirements for dev/test environment.
 
+beautifulsoup4
 bumpversion
 django
 django-debug-toolbar
