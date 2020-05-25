@@ -25,7 +25,7 @@ It is tested against:
  * Django 2.1 (Python 3.5, 3.6 and 3.7)
  * Django 2.2 (Python 3.5, 3.6, 3.7 and 3.8)
  * Django 3.0 (Python 3.6, 3.7 and 3.8)
- * Django master/3.1 (Python 3.6, 3.7 and 3.8)
+ * Django master/3.1 (Python 3.6, 3.7 and 3.8) - not yet working!
 
 .. |Build Status| image:: http://img.shields.io/travis/ninemoreminutes/django-site-utils.svg
    :target: https://travis-ci.org/ninemoreminutes/django-site-utils

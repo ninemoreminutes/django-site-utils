@@ -1,4 +1,2 @@
 include README.rst
 recursive-include site_utils *.py *.txt *.html
-recursive-exclude site_utils/management/commands site_dump.py
-recursive-exclude site_utils/management/commands site_load.py
