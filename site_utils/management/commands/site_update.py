@@ -21,21 +21,37 @@ class Command(BaseCommand):
     requires_system_checks = False
 
     def add_arguments(self, parser):
-        parser.add_argument('--noinput', '--no-input', action='store_false', dest='interactive', default=True,
-                            help='Tells Django to NOT prompt the user for input of any kind.')
-        parser.add_argument('--list-groups', action='store_true', dest='list_groups', default=False,
-                            help='Output available groups for site update commands.')
-        parser.add_argument('group', nargs='*',
-                            help='Specific group of update commands to run.')
+        parser.add_argument(
+            '--noinput',
+            '--no-input',
+            action='store_false',
+            dest='interactive',
+            default=True,
+            help='Tells Django to NOT prompt the user for input of any kind.',
+        )
+        parser.add_argument(
+            '--list-groups',
+            action='store_true',
+            dest='list_groups',
+            default=False,
+            help='Output available groups for site update commands.',
+        )
+        parser.add_argument(
+            'group',
+            nargs='*',
+            help='Specific group of update commands to run.',
+        )
 
-    def _get_command_instance(self, name):
+    @staticmethod
+    def _get_command_instance(name):
         app_name = get_commands()[name]
         if isinstance(app_name, BaseCommand):
             return app_name
         else:
             return load_command_class(app_name, name)
 
-    def _parse_cmd_specs(self, cmd_specs):
+    @staticmethod
+    def _parse_cmd_specs(cmd_specs):
         parsed_cmd_specs = []
         for cmd_spec in cmd_specs:
             if isinstance(cmd_spec, six.string_types):

@@ -16,18 +16,51 @@ class Command(BaseCommand):
     help = 'View or modify the current/selected Site.'
 
     def add_arguments(self, parser):
-        parser.add_argument('-n', '--name', action='store', dest='name', default=None,
-                            help='Update the site name.')
-        parser.add_argument('-d', '--domain', action='store', dest='domain', default=None,
-                            help='Update the site domain.')
-        parser.add_argument('--id', action='store', dest='site_id', type=int, default=0,
-                            help='Specify an alternate site ID to view/modify.')
-        parser.add_argument('--create', action='store_true', dest='create', default=False,
-                            help='Create a new site if needed.')
-        parser.add_argument('--all', action='store_true', dest='all_sites', default=False,
-                            help='View/modify all sites.')
-        parser.add_argument('--json', action='store_true', dest='output_json', default=False,
-                            help='Output site details as JSON.')
+        parser.add_argument(
+            '-n',
+            '--name',
+            action='store',
+            dest='name',
+            default=None,
+            help='Update the site name.',
+        )
+        parser.add_argument(
+            '-d',
+            '--domain',
+            action='store',
+            dest='domain',
+            default=None,
+            help='Update the site domain.',
+        )
+        parser.add_argument(
+            '--id',
+            action='store',
+            dest='site_id',
+            type=int,
+            default=0,
+            help='Specify an alternate site ID to view/modify.',
+        )
+        parser.add_argument(
+            '--create',
+            action='store_true',
+            dest='create',
+            default=False,
+            help='Create a new site if needed.',
+        )
+        parser.add_argument(
+            '--all',
+            action='store_true',
+            dest='all_sites',
+            default=False,
+            help='View/modify all sites.',
+        )
+        parser.add_argument(
+            '--json',
+            action='store_true',
+            dest='output_json',
+            default=False,
+            help='Output site details as JSON.',
+        )
 
     def handle(self, *args, **options):
         verbosity = int(options.get('verbosity', 1))
