@@ -6,7 +6,8 @@ from django.conf import settings
 from django.conf.urls import include, url
 
 # Django-Site-Utils
-from site_utils.urls import handler400, handler403, handler404, handler500  # noqa
+from site_utils.handlers import handler400, handler403, handler404, handler500  # noqa
+import site_utils.urls
 
 # Test App
 import test_project.test_app.urls
@@ -25,6 +26,11 @@ if 'django.contrib.admin' in settings.INSTALLED_APPS:
     # ]
     urlpatterns += [
         url(r'^admin-site/', admin.site.urls),
+    ]
+
+if settings.DEBUG:
+    urlpatterns += [
+        url(r'', include(site_utils.urls)),
     ]
 
 if 'django.contrib.staticfiles' in settings.INSTALLED_APPS and settings.DEBUG:
