@@ -30,6 +30,20 @@ class Content(PolymorphicModel):
     )
 
 
+class Folder(Content):
+
+    name = models.CharField(
+        max_length=100,
+    )
+    parent = models.ForeignKey(
+        'self',
+        related_name='children',
+        null=True,
+        default=None,
+        on_delete=models.SET_NULL,
+    )
+
+
 class Document(Content):
     """Test model with a file field."""
 
@@ -38,6 +52,13 @@ class Document(Content):
     )
     doc = models.FileField(
         upload_to='documents',
+    )
+    in_folder = models.ForeignKey(
+        Folder,
+        related_name='documents',
+        null=True,
+        default=None,
+        on_delete=models.SET_NULL,
     )
 
 
@@ -49,4 +70,11 @@ class Photo(Content):
     )
     image = models.ImageField(
         upload_to='photos',
+    )
+    in_folder = models.ForeignKey(
+        Folder,
+        related_name='photos',
+        null=True,
+        default=None,
+        on_delete=models.SET_NULL,
     )
