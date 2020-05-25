@@ -1,7 +1,7 @@
 # Requirements for dev/test environment.
 
 beautifulsoup4
-bumpversion
+bump2version
 django
 django-debug-toolbar
 django-sortedm2m>=1.4
