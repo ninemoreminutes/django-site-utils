@@ -17,7 +17,7 @@ Other functions include:
  * Error views and handlers.
  * Template context processors.
 
-Documentation can be found at `Read The Docs <http://django-site-utils.readthedocs.io/>`_.
+Documentation can be found at `Read The Docs <http://django-site-utils.readthedocs.io/>`_ (will update soon!).
 
 It is tested against:
  * Django 1.11 (Python 2.7, 3.4, 3.5 and 3.6)

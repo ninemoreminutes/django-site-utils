@@ -10,14 +10,8 @@ site_cleanup
 site_config
 -----------
 
-site_dump
----------
-
 site_error_page
 ---------------
-
-site_load
----------
 
 site_notify
 -----------
