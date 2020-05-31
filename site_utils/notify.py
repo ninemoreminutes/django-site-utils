@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
+from django.utils.encoding import force_text
 
 # Django-Site-Utils
 from .settings import get_site_utils_setting
@@ -18,7 +19,7 @@ __all__ = ['notify_users']
 def notify_users(subject_text=None, body_text=None, all_users=False,
                  admins=False, managers=False, superusers=False, staff=False,
                  bcc=False, subject_template=None, body_template=None,
-                 **kwargs):
+                 dry_run=False, **kwargs):
     """
     Send an email notification to selected site users.
     """
@@ -76,4 +77,7 @@ def notify_users(subject_text=None, body_text=None, all_users=False,
     email_recipients = ['"{}" <{}>'.format(v, k) for k, v in recipients.items()]
     email_kwargs['bcc' if bcc else 'to'] = email_recipients
     email_message = EmailMessage(**email_kwargs)
-    email_message.send()
+    if dry_run:
+        print(force_text(email_message.message()))
+    else:
+        email_message.send()

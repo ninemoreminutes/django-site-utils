@@ -97,6 +97,14 @@ class Command(BaseCommand):
             default=None,
             help='Override body template for this notification.',
         )
+        parser.add_argument(
+            '-n',
+            '--dry-run',
+            action='store_true',
+            dest='dry_run',
+            default=False,
+            help='Dry run; only show the email that would be sent.',
+        )
 
     def handle(self, *args, **options):
         notify_users(**options)
