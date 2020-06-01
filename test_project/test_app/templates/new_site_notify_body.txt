@@ -1,3 +1,5 @@
 {{ body }}
 
+{{ settings.ROOT_URLCONF }}
+
 NEW_BODY_SUFFIX

@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
+from django.test.client import RequestFactory
 from django.utils.encoding import force_text
 
 # Django-Site-Utils
@@ -19,11 +20,10 @@ __all__ = ['notify_users']
 def notify_users(subject_text=None, body_text=None, all_users=False,
                  admins=False, managers=False, superusers=False, staff=False,
                  bcc=False, subject_template=None, body_template=None,
-                 dry_run=False, **kwargs):
+                 dry_run=False, request=None, **kwargs):
     """
     Send an email notification to selected site users.
     """
-
     # Determine which user types should be notified.
     admins = admins or all_users
     managers = managers or all_users
@@ -66,10 +66,11 @@ def notify_users(subject_text=None, body_text=None, all_users=False,
     if isinstance(body_text, (list, tuple)):
         body_text = '\n\n'.join(body_text)
     context = dict(subject=subject_text, body=body_text)
-    subject = render_to_string(subject_template, context)
+    request = request or RequestFactory().get('/')
+    subject = render_to_string(subject_template, context, request)
     subject = ' '.join(filter(None, map(lambda x: x.strip(), subject.splitlines())))
     subject = settings.EMAIL_SUBJECT_PREFIX + subject
-    body = render_to_string(body_template, context)
+    body = render_to_string(body_template, context, request)
 
     # Create and send the email.
     email_kwargs = dict(subject=subject, body=body)

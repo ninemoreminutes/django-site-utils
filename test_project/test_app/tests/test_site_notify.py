@@ -153,7 +153,7 @@ def test_site_notify_subject_body(command_runner, mailoutbox):
     assert 'test_body2' in msg.body
 
 
-def test_site_notify_templates(command_runner, mailoutbox):
+def test_site_notify_templates(command_runner, mailoutbox, settings):
     # Override subject and body templates via command line arguments.
     result = command_runner('site_notify',
                             subject_template='new_site_notify_subject.txt',
@@ -161,7 +161,9 @@ def test_site_notify_templates(command_runner, mailoutbox):
     assert result[0] is None
     assert len(mailoutbox) == 1
     msg = mailoutbox[0]
-    assert 'NEW_SUBJECT' in msg.subject
+    # Verify that template context processor variables are made available.
+    assert 'SITE_ID={}'.format(settings.SITE_ID) in msg.subject
+    assert 'test_project.urls' in msg.body
     assert 'NEW_BODY_SUFFIX' in msg.body
 
 
@@ -173,7 +175,8 @@ def test_site_notify_template_settings(command_runner, mailoutbox, settings):
     assert result[0] is None
     assert len(mailoutbox) == 1
     msg = mailoutbox[0]
-    assert 'NEW_SUBJECT' in msg.subject
+    assert 'SITE_ID={}'.format(settings.SITE_ID) in msg.subject
+    assert 'test_project.urls' in msg.body
     assert 'NEW_BODY_SUFFIX' in msg.body
 
 

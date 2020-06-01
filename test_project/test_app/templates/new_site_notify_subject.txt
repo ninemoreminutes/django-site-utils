@@ -1,1 +1,1 @@
-{{ subject }} NEW_SUBJECT
+{{ subject }} (SITE_ID={{ settings.SITE_ID }})
