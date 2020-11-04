@@ -5,8 +5,8 @@ REQUIREMENTS_TXT = requirements$(PYTHON_MAJOR_MINOR).txt
 core-requirements:
 	pip install pip setuptools pip-tools
 
-.PHONY: update-core-requirements
-update-pip-requirements: core-requirements
+.PHONY: update-requirements
+update-requirements: core-requirements
 	pip install -U pip setuptools pip-tools
 	pip-compile -U requirements.in -o $(REQUIREMENTS_TXT)
 
@@ -18,6 +18,10 @@ requirements: core-requirements
 clean-pyc:
 	find . -iname "*.pyc" -delete
 	find . -iname __pycache__ | xargs rm -rf
+
+.PHONY: tox-update-requirements
+tox-update-requirements: clean-pyc
+	tox -c tox-requirements.ini
 
 .PHONY: develop
 develop: clean-pyc requirements
