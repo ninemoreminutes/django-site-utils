@@ -19,8 +19,8 @@ DEFAULT_SITE_NOTIFY_BODY_TEMPLATE = 'site_utils/notify_body.txt'
 
 DEFAULT_SITE_UPDATE_COMMANDS = {
     'default': [
-        ('check', [], {}, None),
-        ('migrate', [], {'fake_initial': True}, None),
+        'check',
+        ('migrate', [], {'fake_initial': True}),
         ('collectstatic', [], {}, 'staticfiles'),
     ],
 }

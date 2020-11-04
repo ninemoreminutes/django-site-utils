@@ -37,6 +37,7 @@ class Command(BaseCommand):
         site_cleanup_functions = []
         for func_import in get_site_utils_setting('SITE_CLEANUP_FUNCTIONS'):
             site_cleanup_functions.append(import_string(func_import))
+        # FIXME: Honor interactive option and prompt before each function.
         for func in site_cleanup_functions:
             if verbosity >= 2:
                 self.stdout.write('Running site cleanup function "{}"'.format(func.__name__))
