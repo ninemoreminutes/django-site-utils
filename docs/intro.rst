@@ -7,14 +7,9 @@ install it and add it to your Django project.
 Installation
 ------------
 
-Install the ``django-site-utils`` package using `pip <http://www.pip-installer.org/>`_ or
-`easy_install <http://packages.python.org/distribute/easy_install.html>`_::
+Install the ``django-site-utils`` package using `pip <http://www.pip-installer.org/>`_::
 
    pip install django-site-utils
-
-::
-
-   easy_install django-site-utils
 
 Using a `virtual environment <http://www.virtualenv.org/>`_ is highly
 recommended instead of installing into your system wide site-packages
@@ -31,9 +26,6 @@ Add ``site_utils`` to your project's INSTALLED_APPS::
        ...
     )
 
-The ``site_update`` command refers to a dictionary of commands to run,
-which can be customized by each project's settings.
-
 Usage
 -----
 
@@ -45,19 +37,17 @@ Where *<command>* is one of the following:
 
 * ``site_cleanup``
 * ``site_config``
-* ``site_dump``
-* ``site_error``
-* ``site_load``
+* ``site_error_page``
 * ``site_notify``
 * ``site_update``
 
 Any command can be followed with the ``--help`` option to view the available
 command line arguments.
 
-Django-Site-Utils also offers generic error views...
-
 Next Steps
 ----------
 
 To learn more about a specific command, read its detailed documentation under
-:doc:`commands` or configure it with custom :doc:`settings`.
+:doc:`commands` or configure it with custom :doc:`settings`. Refer to :doc:`views`
+to learn more about the included error handlers and views and :doc:`context_processors`
+to learn about the available context processors.

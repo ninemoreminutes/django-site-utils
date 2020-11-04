@@ -18,11 +18,13 @@ Other functions include:
  * Template context processors.
 
 It is tested against:
- * Django 1.11 (Python 2.7, 3.4, 3.5 and 3.6)
- * Django 2.0 (Python 3.4, 3.5, 3.6 and 3.7)
+ * Django 1.11 (Python 3.5 and 3.6)
+ * Django 2.0 (Python 3.5, 3.6 and 3.7)
  * Django 2.1 (Python 3.5, 3.6 and 3.7)
- * Django 2.2 (Python 3.5, 3.6, 3.7 and 3.8)
- * Django 3.0 (Python 3.6, 3.7 and 3.8)
+ * Django 2.2 (Python 3.5, 3.6, 3.7, 3.8 and 3.9)
+ * Django 3.0 (Python 3.6, 3.7, 3.8 and 3.9)
+ * Django 3.1 (Python 3.6, 3.7, 3.8 and 3.9)
+ * Django master/3.2 (Python 3.6, 3.7, 3.8 and 3.9)
 
 .. toctree::
    :maxdepth: 2
@@ -31,6 +33,7 @@ It is tested against:
    commands
    settings
    views
+   context_processors
 
 .. Indices and tables
 .. ==================
