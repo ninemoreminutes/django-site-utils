@@ -22,5 +22,5 @@ pytest-runner
 setuptools-twine
 sphinx
 tox
-tox-travis
+tox-gh-actions
 twine

@@ -28,8 +28,8 @@ It is tested against:
  * Django 3.1 (Python 3.6, 3.7, 3.8 and 3.9)
  * Django master/3.2 (Python 3.6, 3.7, 3.8 and 3.9)
 
-.. |Build Status| image:: http://img.shields.io/travis/ninemoreminutes/django-site-utils.svg
-   :target: https://travis-ci.org/ninemoreminutes/django-site-utils
+.. |Build Status| image:: https://img.shields.io/github/workflow/status/ninemoreminutes/django-site-utils/test
+   :target: https://github.com/ninemoreminutes/django-site-utils/actions?query=workflow%3Atest
 .. |PyPI Version| image:: https://img.shields.io/pypi/v/django-site-utils.svg
    :target: https://pypi.python.org/pypi/django-site-utils/
 .. |PyPI License| image:: https://img.shields.io/pypi/l/django-site-utils.svg
