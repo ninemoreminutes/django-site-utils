@@ -142,3 +142,20 @@ The default value is::
     SITE_ERROR_TEMPLATES = [
         (r'', 'site_utils/error.html'),
     ]
+
+SITE_PATCHES
+------------
+
+This setting is a list or tuple of functions that are executed once the Django models
+have been populated (via the ``AppConfig.ready()`` method). These functions can be used
+to monkeypatch other libraries or perform other project initialization.
+
+Its default value is::
+
+    SITE_PATCHES = [
+        'site_utils.patches.patch_runserver_addrport',
+    ]
+
+The included patch function above will use the ``RUNSERVER_DEFAULT_ADDR`` and
+``RUNSERVER_DEFAULT_PORT`` settings to determine the default address and port used for
+``manage.py runserver`` when not otherwise specified via command line options.

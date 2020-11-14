@@ -60,6 +60,10 @@ DEFAULT_SITE_ERROR_TEMPLATES = [
     (r'', 'site_utils/error.html'),
 ]
 
+DEFAULT_SITE_PATCHES = (
+    'site_utils.patches.patch_runserver_addrport',
+)
+
 
 def get_site_utils_setting(name, merge_dicts=False):
     try:
