@@ -62,6 +62,7 @@ DEFAULT_SITE_ERROR_TEMPLATES = [
 
 DEFAULT_SITE_PATCHES = (
     'site_utils.patches.patch_runserver_addrport',
+    'site_utils.patches.patch_wsgi_handler_keep_alive',
 )
 
 
