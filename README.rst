@@ -13,9 +13,11 @@ Management commands include:
  * ``site_notify`` : Send notifications to administrators and staff.
  * ``site_update`` : Run groups of management commands at once.
 
-Other functions include:
+Other features include:
  * Error views and handlers.
  * Template context processors.
+ * Admin mixin classes.
+ * Functions to patch Django internals.
 
 Documentation can be found at `Read The Docs <http://django-site-utils.readthedocs.io/>`_.
 
