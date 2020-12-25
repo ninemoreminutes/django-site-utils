@@ -1,6 +1,10 @@
 Settings
 ========
 
+The default values for all settings below can be imported from ``site_utils.defaults`` if needed to combine
+or merge with custom settings. Settings that are dictionaries (e.g. ``SITE_UPDATE_COMMANDS`` and
+``SITE_ERROR_MESSAGES``) will be automatically merged with default settings.
+
 SITE_CLEANUP_FUNCTIONS
 ----------------------
 
