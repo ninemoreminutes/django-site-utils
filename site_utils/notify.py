@@ -52,10 +52,10 @@ def notify_users(subject_text=None, body_text=None, all_users=False,
         for name, email in settings.MANAGERS:
             recipients.setdefault(email, name)
     if superusers and user_model:
-        for user in user_model.objects.filter(is_active=True, is_superuser=True):
+        for user in user_model.objects.exclude(email='').filter(is_active=True, is_superuser=True):
             recipients.setdefault(user.email, user.get_full_name() or user.email)
     if staff and user_model:
-        for user in user_model.objects.filter(is_active=True, is_staff=True):
+        for user in user_model.objects.exclude(email='').filter(is_active=True, is_staff=True):
             recipients.setdefault(user.email, user.get_full_name() or user.email)
 
     # Render subject and body of notification.
