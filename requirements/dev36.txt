@@ -221,7 +221,7 @@ twine==3.4.1
     #   setuptools-twine
 typing-extensions==3.7.4.3
     # via importlib-metadata
-urllib3==1.26.4
+urllib3==1.26.5
     # via requests
 virtualenv==20.4.3
     # via tox
