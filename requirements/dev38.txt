@@ -46,7 +46,7 @@ django-sortedm2m==3.0.2
     # via -r requirements/dev.in
 django-storages==1.11.1
     # via -r requirements/dev.in
-django==3.1.7
+django==3.1.9
     # via
     #   -r requirements/dev.in
     #   django-debug-toolbar
